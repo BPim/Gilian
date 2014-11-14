@@ -53,6 +53,8 @@ public class BluetoothChatService {
     private static final UUID MY_UUID_INSECURE =
         UUID.fromString("8ce255c0-200a-11e0-ac64-0800200c9a66");
         */
+        
+    // 아두이노와 블루투스 통신을 하기위해 UUID를 맞게 설정해주어야 한다.
     private static final UUID MY_UUID_SECURE = UUID
 			.fromString("00001101-0000-1000-8000-00805F9B34FB"); //serial port service class
     private static final UUID MY_UUID_INSECURE = UUID
