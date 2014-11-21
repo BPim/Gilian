@@ -1,4 +1,4 @@
-package com.skplanetx.tmapopenmapapi.ui;
+﻿package com.skplanetx.tmapopenmapapi.ui;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -465,7 +465,10 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	
 	public void animateTo() {
 		TMapPoint point = randomTMapPoint();
+		mMapView.setIconVisibility(true);
+		
 		mMapView.setCenterPoint(point.getLongitude(), point.getLatitude(), true);
+		mMapView.setLocationPoint(point.getLongitude(), point.getLatitude());
 	}
 	
 	public Map<String, AroundusItems> mAroundusItemHash = new LinkedHashMap<String, AroundusItems>();
