@@ -2,7 +2,9 @@ package com.skplanetx.tmapopenmapapi.ui;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.OutputStream;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -10,9 +12,13 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import javax.xml.parsers.FactoryConfigurationError;
+import javax.xml.parsers.ParserConfigurationException;
+
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
+import org.xml.sax.SAXException;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -71,6 +77,11 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 		}
 	}
 
+	private TMapPoint startpoint = null;
+	private TMapPoint endpoint= null;
+	private TMapPolyLine polyLine=null; //그림그리는 객체
+	private TMapPoint pointA ;
+	
 	private TMapView		mMapView = null;
 	
 	private Context 		mContext;
@@ -303,8 +314,92 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 			@Override
 			public void onLongPressEvent(ArrayList<TMapMarkerItem> markerlist,ArrayList<TMapPOIItem> poilist, TMapPoint point) {
 				LogManager.printLog("MainActivity onLongPressEvent " + markerlist.size());
+				
+				
+				pointA = point;
+				
+				
+				
+				
+	            //TMapPoint endpoint = new TMapPoint(point.getLatitude(), point.getLongitude());
+	           
+	            
+				//hana
+				// 출발지, 도착지 선택 알림창 부분.
+				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				
+				builder.setTitle("출발지/도착지를 선택하세요"); // 제목 설정
+				
+				builder.setCancelable(true); // 뒤로 버튼 클릭시 취소 가능 설정
+				builder.setPositiveButton("출발", new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+						// 출발 버튼 클릭시 설정
+						startpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());		
+						
+					}
+				});
+				
+				builder.setNegativeButton("도착", new DialogInterface.OnClickListener() {
+					
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						// TODO Auto-generated method stub
+						// 도착 버튼 클릭시 설정
+						endpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());
+						TMapData tmapdata = new TMapData(); 
+						
+						if(startpoint == null)
+						{
+							///////////////////////////여기가 안돼요
+							AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+							builder.setTitle("출발지를 선택해 주세요") ;
+							
+							builder.setNegativeButton("확인", new DialogInterface.OnClickListener() {
+							////////////////////
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									// TODO Auto-generated method stub
+									dialog.cancel();
+								}
+							});
+						}else{
+						
+							// 경로설정
+							try {
+								polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
+							} catch (MalformedURLException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (IOException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (ParserConfigurationException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (FactoryConfigurationError e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							} catch (SAXException e) {
+								// TODO Auto-generated catch block
+								e.printStackTrace();
+							}
+			            
+							mMapView.addTMapPolyLine("Go Home",polyLine);
+						}
+					}
+				});
+				
+				AlertDialog dialog = builder.create();    // 알림창 객체 생성
+				dialog.show();    // 알림창 띄우기
+				
+				
 			}
 		});
+		
+		
 		
 		mMapView.setOnCalloutRightButtonClickListener(new TMapView.OnCalloutRightButtonClickCallback() {
 			@Override
