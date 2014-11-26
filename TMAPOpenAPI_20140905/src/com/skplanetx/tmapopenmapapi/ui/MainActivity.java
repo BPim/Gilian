@@ -207,6 +207,19 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 		gps.OpenGps();
 		
 		mMapView.setTMapLogoPosition(TMapLogoPositon.POSITION_BOTTOMRIGHT);
+		LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
+	      
+	      Location location = locationManager
+	                   .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+	      double latitude = location.getLatitude();
+	       double longitude = location.getLongitude();  
+	       
+	      TMapPoint point = new TMapPoint(latitude, longitude);
+	      mMapView.setCenterPoint(point.getLongitude(),point.getLatitude());
+	      mMapView.setIconVisibility(true);
+	      mMapView.setLocationPoint(point.getLongitude(),point.getLatitude());
+		
 	}
 
 	/**
