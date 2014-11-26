@@ -25,6 +25,6 @@
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/existroute"
         android:layout_marginTop="164dp"
-        android:text="+ Add New Route" />
+    	android:background = "@drawable/button_image"/>
 
 </RelativeLayout>
