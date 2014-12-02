@@ -24,7 +24,7 @@
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/existroute"
-        android:layout_marginTop="177dp"
-        android:text="+ Add New Route" />
+        android:layout_marginTop="200dp"
+        android:background="@drawable/button_add" />
 
 </RelativeLayout>
