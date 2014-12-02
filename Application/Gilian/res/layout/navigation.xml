@@ -6,6 +6,13 @@
     android:orientation="vertical" 
     tools:context="com.gilian.ese.inu.Navigation" >
 
+    
+    <TableRow
+        android:id="@+id/existroute"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" >
+    </TableRow>
+    
     <Gallery
         android:id="@+id/gallery1"
         android:layout_width="match_parent"
@@ -17,16 +24,17 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true"
-        android:layout_marginTop="36dp"
-        android:text="LED, 진동안내" />
+        android:layout_below="@+id/existroute"
+        android:layout_marginTop="170dp"
+        android:background="@drawable/button_led"/>
 
     <Button
         android:id="@+id/navigation"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
-        android:layout_below="@+id/navigation1"
-        android:text="지도 안내" />
+        android:layout_below="@+id/existroute"
+        android:layout_marginTop="220dp"
+        android:background="@drawable/button_vibration" />
 
 </RelativeLayout>
