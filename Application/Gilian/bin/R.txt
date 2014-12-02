@@ -276,8 +276,8 @@ int id image 0x7f090027
 int id listMode 0x7f090006
 int id list_item 0x7f090029
 int id middle 0x7f090018
-int id navigation 0x7f090041
-int id navigation1 0x7f090042
+int id navigation 0x7f090042
+int id navigation1 0x7f090041
 int id never 0x7f090012
 int id none 0x7f090019
 int id normal 0x7f090007

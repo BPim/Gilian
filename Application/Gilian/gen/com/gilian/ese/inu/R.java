@@ -1121,8 +1121,8 @@ containing a value of this type.
         public static final int listMode=0x7f090006;
         public static final int list_item=0x7f090029;
         public static final int middle=0x7f090018;
-        public static final int navigation=0x7f090041;
-        public static final int navigation1=0x7f090042;
+        public static final int navigation=0x7f090042;
+        public static final int navigation1=0x7f090041;
         public static final int never=0x7f090012;
         public static final int none=0x7f090019;
         public static final int normal=0x7f090007;
