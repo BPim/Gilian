@@ -39,6 +39,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.skp.Tmap.BizCategory;
 import com.skp.Tmap.TMapCircle;
@@ -353,20 +354,24 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 						
 						if(startpoint == null)
 						{
-							///////////////////////////여기가 안돼요
+							Toast.makeText(getApplicationContext(), "출발 확인", Toast.LENGTH_LONG).show();
 							AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
 							builder.setTitle("출발지를 선택해 주세요") ;
-							
-							builder.setNegativeButton("확인", new DialogInterface.OnClickListener() {
-							////////////////////
+							builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
+								
 								@Override
-								public void onClick(DialogInterface dialog, int which) {
+								public void onClick(DialogInterface dialog, int which) 
+								{
 									// TODO Auto-generated method stub
 									dialog.cancel();
 								}
 							});
-						}else{
+							
+							builder.show();
+						}
 						
+						else
+						{		
 							// 경로설정
 							try {
 								polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
