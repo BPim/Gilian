@@ -2,9 +2,7 @@ package com.skplanetx.tmapopenmapapi.ui;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Date;
@@ -12,13 +10,9 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import javax.xml.parsers.FactoryConfigurationError;
-import javax.xml.parsers.ParserConfigurationException;
-
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
 import android.app.AlertDialog;
 import android.content.Context;
@@ -39,7 +33,6 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.skp.Tmap.BizCategory;
 import com.skp.Tmap.TMapCircle;
@@ -78,11 +71,6 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 		}
 	}
 
-	private TMapPoint startpoint = null;
-	private TMapPoint endpoint= null;
-	private TMapPolyLine polyLine=null; //그림그리는 객체
-	private TMapPoint pointA ;
-	
 	private TMapView		mMapView = null;
 	
 	private Context 		mContext;
@@ -93,61 +81,10 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	public static String mBizAppID; // 발급받은 BizAppID (TMapTapi로 TMap앱 연동을 할 때 BizAppID 꼭 필요)
 	
 	private static final int[] mArrayMapButton = {
-		R.id.btnOverlay,
+
 		R.id.btnAnimateTo,
-		R.id.btnAroundus,
-		R.id.btnZoomIn,
-		R.id.btnZoomOut,
-		R.id.btnGetZoomLevel,
-		R.id.btnSetZoomLevel,
-		R.id.btnSetMapType,
-		R.id.btnGetLocationPoint,
-		R.id.btnSetLocationPoint,
-		R.id.btnSetIcon,
-		R.id.btnSetCompassMode,
-		R.id.btnGetIsCompass,
-		R.id.btnSetTrafficInfo,
-		R.id.btnGetIsTrafficeInfo,
-		R.id.btnSetSightVisible,
-		R.id.btnSetTrackIngMode,
-		R.id.btnGetIsTracking,
-		R.id.btnAddTMapCircle,
-		R.id.btnRemoveTMapCircle, 
-		R.id.btnMarkerPoint,
-		R.id.btnRemoveMarker,
-		R.id.btnMoveFrontMarker,
-		R.id.btnMoveBackMarker,
-		R.id.btnDrawPolyLine,
-		R.id.btnErasePolyLine,		
-		R.id.btnDrawPolygon,
-		R.id.btnErasePolygon,
-		R.id.btnBicycle,
-		R.id.btnBicycleFacility,
-		R.id.btnMapPath, 
-		R.id.btnRemoveMapPath,
-		R.id.btnDisplayMapInfo,
-		R.id.btnNaviGuide,
-		R.id.btnCarPath,
-		R.id.btnPedestrian_Path,
-		R.id.btnBicycle_Path,
-		R.id.btnGetCenterPoint,
-		R.id.btnFindAllPoi,
-		R.id.btnConvertToAddress,
-		R.id.btnGetBizCategory,
-		R.id.btnGetAroundBizPoi,
-		R.id.btnTileType,
-		R.id.btnCapture,
-		R.id.btnDisalbeZoom,
-		
-		R.id.btnInvokeRoute,
-		R.id.btnInvokeSetLocation,
-		R.id.btnInvokeSearchPortal, 
-		
-		R.id.btnTimeMachine, 
-		R.id.btnTMapInstall,
-		
-		R.id.btnMarkerPoint2,
-		R.id.btnScrollView
+
+	
 	};
 
 	private 	int 		m_nCurrentZoomLevel = 0;
@@ -219,19 +156,18 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 		gps.OpenGps();
 		
 		mMapView.setTMapLogoPosition(TMapLogoPositon.POSITION_BOTTOMRIGHT);
-		LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
-	      
-	      Location location = locationManager
-	                   .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-
-	      double latitude = location.getLatitude();
-	       double longitude = location.getLongitude();  
-	       
-	      TMapPoint point = new TMapPoint(latitude, longitude);
-	      mMapView.setCenterPoint(point.getLongitude(),point.getLatitude());
-	      mMapView.setIconVisibility(true);
-	      mMapView.setLocationPoint(point.getLongitude(),point.getLatitude());
+LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		
+		Location location = locationManager
+	                .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+		double latitude = location.getLatitude();
+	    double longitude = location.getLongitude();  
+	    
+		TMapPoint point = new TMapPoint(latitude, longitude);
+		mMapView.setCenterPoint(point.getLongitude(),point.getLatitude());
+		mMapView.setIconVisibility(true);
+		mMapView.setLocationPoint(point.getLongitude(),point.getLatitude());
 	}
 
 	/**
@@ -315,96 +251,8 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 			@Override
 			public void onLongPressEvent(ArrayList<TMapMarkerItem> markerlist,ArrayList<TMapPOIItem> poilist, TMapPoint point) {
 				LogManager.printLog("MainActivity onLongPressEvent " + markerlist.size());
-				
-				
-				pointA = point;
-				
-				
-				
-				
-	            //TMapPoint endpoint = new TMapPoint(point.getLatitude(), point.getLongitude());
-	           
-	            
-				//hana
-				// 출발지, 도착지 선택 알림창 부분.
-				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-				
-				builder.setTitle("출발지/도착지를 선택하세요"); // 제목 설정
-				
-				builder.setCancelable(true); // 뒤로 버튼 클릭시 취소 가능 설정
-				builder.setPositiveButton("출발", new DialogInterface.OnClickListener() {
-					
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						// TODO Auto-generated method stub
-						// 출발 버튼 클릭시 설정
-						startpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());		
-						
-					}
-				});
-				
-				builder.setNegativeButton("도착", new DialogInterface.OnClickListener() {
-					
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						// TODO Auto-generated method stub
-						// 도착 버튼 클릭시 설정
-						endpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());
-						TMapData tmapdata = new TMapData(); 
-						
-						if(startpoint == null)
-						{
-							Toast.makeText(getApplicationContext(), "출발 확인", Toast.LENGTH_LONG).show();
-							AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-							builder.setTitle("출발지를 선택해 주세요") ;
-							builder.setPositiveButton("확인", new DialogInterface.OnClickListener() {
-								
-								@Override
-								public void onClick(DialogInterface dialog, int which) 
-								{
-									// TODO Auto-generated method stub
-									dialog.cancel();
-								}
-							});
-							
-							builder.show();
-						}
-						
-						else
-						{		
-							// 경로설정
-							try {
-								polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
-							} catch (MalformedURLException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (ParserConfigurationException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (FactoryConfigurationError e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (SAXException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-			            
-							mMapView.addTMapPolyLine("Go Home",polyLine);
-						}
-					}
-				});
-				
-				AlertDialog dialog = builder.create();    // 알림창 객체 생성
-				dialog.show();    // 알림창 띄우기
-				
-				
 			}
 		});
-		
-		
 		
 		mMapView.setOnCalloutRightButtonClickListener(new TMapView.OnCalloutRightButtonClickCallback() {
 			@Override
@@ -460,67 +308,10 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	@Override
 	public void onClick(View v) {
 		switch(v.getId()) {
-		case R.id.btnOverlay		  : 	overlay(); 				break;
+		
 		case R.id.btnAnimateTo		  : 	animateTo(); 			break;
-		case R.id.btnAroundus		  : 	setAroundus(); 			break;
-		case R.id.btnZoomIn			  : 	mapZoomIn(); 			break;
-		case R.id.btnZoomOut		  : 	mapZoomOut(); 			break;
-		case R.id.btnGetZoomLevel	  :  	getZoomLevel(); 		break;
-		case R.id.btnSetZoomLevel	  :  	setZoomLevel(); 		break;
-		case R.id.btnSetMapType		  :		setMapType(); 			break;
-		case R.id.btnGetLocationPoint : 	getLocationPoint(); 	break;	
-		case R.id.btnSetLocationPoint : 	setLocationPoint(); 	break;
-		case R.id.btnSetIcon		  : 	setMapIcon(); 			break;
-		case R.id.btnSetCompassMode	  : 	setCompassMode();		break;
-		case R.id.btnGetIsCompass     :		getIsCompass();			break;
-		case R.id.btnSetTrafficInfo	  :		setTrafficeInfo();		break;		
-		case R.id.btnGetIsTrafficeInfo: 	getIsTrafficeInfo();	break;
-		case R.id.btnSetSightVisible  : 	setSightVisible();		break;
-		case R.id.btnSetTrackIngMode  : 	setTrackingMode();		break;
-		case R.id.btnGetIsTracking	  : 	getIsTracking();		break;
-		case R.id.btnAddTMapCircle	  : 	addTMapCircle();		break;
-		case R.id.btnRemoveTMapCircle : 	removeTMapCircle();		break;
-		case R.id.btnMarkerPoint	  :     showMarkerPoint(); 		break;
-		case R.id.btnRemoveMarker     : 	removeMarker(); 		break;
-		case R.id.btnMoveFrontMarker  :     moveFrontMarker(); 		break;
-		case R.id.btnMoveBackMarker   :     moveBackMarker();		break;
-		case R.id.btnDrawPolyLine     :     drawLine();			 	break;
-		case R.id.btnErasePolyLine	  : 	erasePolyLine();		break;
-		case R.id.btnDrawPolygon	  : 	drawPolygon(); 			break;
-		case R.id.btnErasePolygon     :     erasePolygon(); 		break;
-		case R.id.btnMapPath		  : 	drawMapPath();			break;
-		case R.id.btnRemoveMapPath    :     removeMapPath(); 		break;
-		case R.id.btnDisplayMapInfo   :     displayMapInfo(); 		break;		
-		case R.id.btnNaviGuide		  :     naviGuide();			break;				
-		case R.id.btnCarPath		  :     drawCarPath(); 			break;
-		case R.id.btnPedestrian_Path  :     drawPedestrianPath();   break;
-		case R.id.btnBicycle_Path     :     drawBicyclePath(); 	    break;
 		
-		case R.id.btnGetCenterPoint   :     getCenterPoint();		break;
-		
-		case R.id.btnFindAllPoi		  :     findAllPoi();			break;
-		case R.id.btnConvertToAddress :     convertToAddress(); 	break;
-		case R.id.btnGetBizCategory   : 	getBizCategory(); 		break;
-		case R.id.btnGetAroundBizPoi  :     getAroundBizPoi(); 		break;
-		case R.id.btnTileType		  : 	setTileType();			break;
-		
-		
-		case R.id.btnInvokeRoute	  :     invokeRoute();			break;
-		case R.id.btnInvokeSetLocation: 	invokeSetLocation();    break;
-				
-		case R.id.btnInvokeSearchPortal: 	invokeSearchProtal(); 	break;
-		
-		case R.id.btnBicycle		  :     setBicycle();		    break;
-		case R.id.btnBicycleFacility  : 	setBicycleFacility();   break;
-		case R.id.btnCapture		  :     captureImage(); 		break;
-		
-		case R.id.btnDisalbeZoom	  : 	disableZoom();			break;
-		
-		case R.id.btnTimeMachine	  :   	timeMachine(); 			break;
-		
-		case R.id.btnTMapInstall	  :     tmapInstall(); 			break;
-		
-		case R.id.btnMarkerPoint2	  :     showMarkerPoint2(); 	break;
+
 		}
 	} 
 	
@@ -533,13 +324,6 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 		double latitude = location.getLatitude();//((double)Math.random() ) * (37.575113-37.483086) + 37.483086;
 	    double longitude = location.getLongitude();//((double)Math.random() ) * (127.027359-126.878357) + 126.878357;    
 
-	    //latitude = Math.min(37.575113, latitude);
-	   // latitude = Math.max(37.483086, latitude);
-	    
-	   // longitude = Math.min(127.027359, longitude);
-	   // longitude = Math.max(126.878357, longitude);
-
-	    LogManager.printLog("randomTMapPoint" + latitude + " " + longitude);
 	    
 		TMapPoint point = new TMapPoint(latitude, longitude);
 		
