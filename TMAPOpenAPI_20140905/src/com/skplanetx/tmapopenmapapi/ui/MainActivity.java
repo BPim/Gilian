@@ -96,6 +96,8 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	private static final int[] mArrayMapButton = {
 
 		R.id.btnAnimateTo,
+		R.id.btnSetIcon,
+		R.id.btnSetCompassMode,
 
 	
 	};
@@ -400,8 +402,8 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		switch(v.getId()) {
 		
 		case R.id.btnAnimateTo		  : 	animateTo(); 			break;
-		
-
+		case R.id.btnSetIcon		  :		animateTo();			break; //나중에 수정하기
+		case R.id.btnSetCompassMode   :		setCompassMode();		break;
 		}
 	} 
 	
