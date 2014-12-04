@@ -7,5 +7,7 @@
 	
 	<string name="setIcon">길안내</string>
 	<string name="setCompassMode">나침반모드</string>
+	<string name="normalBtn_str">지도 안내 </string>
+	<string name="ledvidBtn_str">LED, 진동 안내</string>
 	
 </resources>

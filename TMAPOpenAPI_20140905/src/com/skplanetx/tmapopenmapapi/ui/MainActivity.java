@@ -84,7 +84,8 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	private TMapPoint endpoint= null;
 	private TMapPolyLine polyLine=null; //그림그리는 객체
 	private TMapPoint pointA ;
-	
+	private TMapData tmapdata ; 
+	private ArrayList<String> RoutePoint = new ArrayList<String>();
 	
 	private Context 		mContext;
 	private ArrayList<Bitmap> mOverlayList;
@@ -296,7 +297,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 						// TODO Auto-generated method stub
 						// 도착 버튼 클릭시 설정
 						endpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());
-						TMapData tmapdata = new TMapData(); 
+						tmapdata = new TMapData(); 
 						
 						if(startpoint == null)
 						{
@@ -319,6 +320,12 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 							// 경로설정
 							try {
 								polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
+								
+								for (TMapPoint temp : polyLine.getLinePoint())
+								{
+									LogManager.printLog("point "+temp.toString());
+									RoutePoint.add(temp.toString());
+								}
 							} catch (MalformedURLException e) {
 								// TODO Auto-generated catch block
 								e.printStackTrace();
@@ -337,10 +344,12 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 							}
 			            
 							mMapView.addTMapPolyLine("Go Home",polyLine);
+							
 						
 					}
 				});
 				
+
 				AlertDialog dialog = builder.create();    // 알림창 객체 생성
 				dialog.show();    // 알림창 띄우기
 			}
@@ -402,7 +411,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		switch(v.getId()) {
 		
 		case R.id.btnAnimateTo		  : 	animateTo(); 			break;
-		case R.id.btnSetIcon		  :		animateTo();			break; //나중에 수정하기
+		case R.id.btnSetIcon		  :		goSelectActivity();			break; //나중에 수정하기
 		case R.id.btnSetCompassMode   :		setCompassMode();		break;
 		}
 	} 
@@ -451,7 +460,14 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 			mMapView.removeTMapOverlayID(0);
 		}
 	}
-	
+	public void goSelectActivity()
+	{
+		Intent intent = new Intent(getApplicationContext(), SelectActivity.class);
+		
+		//intent.putStringArrayListExtra("route", tmapdata);
+		intent.putStringArrayListExtra("RoutePoint", RoutePoint);
+		startActivity(intent);
+	}
 	public void animateTo() {
 		TMapPoint point = randomTMapPoint();
 		mMapView.setIconVisibility(true);
