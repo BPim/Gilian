@@ -17,23 +17,27 @@ public final class R {
     public static final class attr {
     }
     public static final class drawable {
-        public static final int ani1=0x7f020000;
-        public static final int ani2=0x7f020001;
-        public static final int bubble_info=0x7f020002;
-        public static final int end=0x7f020003;
-        public static final int i_go=0x7f020004;
-        public static final int i_location=0x7f020005;
-        public static final int ic_launcher=0x7f020006;
-        public static final int info_box=0x7f020007;
-        public static final int map_pin_red=0x7f020008;
-        public static final int pin_tevent=0x7f020009;
-        public static final int poi_dot=0x7f02000a;
-        public static final int poi_img=0x7f02000b;
-        public static final int poi_popup=0x7f02000c;
-        public static final int poi_star=0x7f02000d;
-        public static final int popup=0x7f02000e;
-        public static final int right_arrow=0x7f02000f;
-        public static final int test_image=0x7f020010;
+        public static final int abc=0x7f020000;
+        public static final int ani1=0x7f020001;
+        public static final int ani2=0x7f020002;
+        public static final int bubble_info=0x7f020003;
+        public static final int button_add=0x7f020004;
+        public static final int button_led=0x7f020005;
+        public static final int button_vibration=0x7f020006;
+        public static final int end=0x7f020007;
+        public static final int i_go=0x7f020008;
+        public static final int i_location=0x7f020009;
+        public static final int ic_launcher=0x7f02000a;
+        public static final int info_box=0x7f02000b;
+        public static final int map_pin_red=0x7f02000c;
+        public static final int pin_tevent=0x7f02000d;
+        public static final int poi_dot=0x7f02000e;
+        public static final int poi_img=0x7f02000f;
+        public static final int poi_popup=0x7f020010;
+        public static final int poi_star=0x7f020011;
+        public static final int popup=0x7f020012;
+        public static final int right_arrow=0x7f020013;
+        public static final int test_image=0x7f020014;
     }
     public static final class id {
         public static final int btnAnimateTo=0x7f060004;
