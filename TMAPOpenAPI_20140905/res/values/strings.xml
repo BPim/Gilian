@@ -3,15 +3,15 @@
     <string name="app_name">SKP_TMAP_OPENAPI_SAMPLE</string>
         
 	<string name="overlay">overlay</string>
-	<string name="animateTo">animateTo</string>
+	<string name="animateTo">현재위치</string>
 	<string name="aroundus">광고</string>
 	
 	<string name="setCenterPoint">Set Center Point</string>  
 	<string name="setLocationPoint">Set Location Point</string>
 	<string name="getLocationPoint">Get Location Point</string>
 	
-	<string name="setIcon">아이콘 설정</string>
-	<string name="setCompassMode">나침반 모드 설정</string>
+	<string name="setIcon">길안내</string>
+	<string name="setCompassMode">나침반모드</string>
 	<string name="getIsCompass">나침반 모드 사용여부</string>
 	
 	<string name="zoomIn">줌 In</string>
@@ -23,7 +23,7 @@
 	
 	<string name="getCenterPoint">화면 중심좌표</string>
 	
-	<string name="setTrafficeInfo">실시간 교통정보 표출</string>
+	<string name="setTrafficeInfo">실시간 교통정보</string>
 	<string name="getIsTrafficeInfo">실시간 교통정보 표출상태</string>
 	
 	<string name="setsightvisible">시야표출여부</string>
