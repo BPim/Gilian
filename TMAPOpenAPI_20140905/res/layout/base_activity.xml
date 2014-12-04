@@ -1,59 +1,62 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
-    android:layout_height="fill_parent"
-    android:background="@android:color/black"
-    android:orientation="vertical" >
+<LinearLayout
+	xmlns:android="http://schemas.android.com/apk/res/android"
+	android:layout_width="fill_parent"
+	android:layout_height="fill_parent"
+	android:orientation="vertical"
+	android:background="@android:color/black">
 
-    <RelativeLayout
-        android:id="@+id/contentView"
-        android:layout_width="fill_parent"
-        android:layout_height="121dp"
-        android:layout_weight="7.45"
-        android:background="@android:color/white" >
-    </RelativeLayout>
+	<RelativeLayout
+		android:id="@+id/contentView"
+		android:layout_width="fill_parent"
+		android:layout_height="fill_parent" 
+		android:layout_weight="1" 
+		android:background="@android:color/white">
+	</RelativeLayout>
+	
+	<LinearLayout
+	    android:layout_width="fill_parent"
+	    android:layout_height="wrap_content"
+	    android:orientation="vertical"
+	    android:paddingTop="2dip" >
+		
+      	<ScrollView
+      	    android:layout_width="fill_parent"
+      	    android:layout_height="wrap_content"
+      	    android:fillViewport="true"
+      	    android:scrollbarStyle="outsideOverlay" >
 
-    <LinearLayout
-        android:layout_width="fill_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:paddingTop="2dip" >
+			<LinearLayout
+			    android:layout_width="fill_parent"
+			    android:layout_height="fill_parent"
+			    android:orientation="horizontal" >
 
-        <ScrollView
-            android:layout_width="fill_parent"
-            android:layout_height="wrap_content"
-            android:fillViewport="true"
-            android:scrollbarStyle="outsideOverlay" >
+				<Button
+				    android:id="@+id/btnAnimateTo"
+				    android:layout_width="wrap_content"
+				    android:layout_height="wrap_content"
+				    android:layout_weight="1"
+				    android:text="@string/animateTo" />
 
-            <LinearLayout
-                android:layout_width="fill_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal" >
+				<Button
+				    android:id="@+id/btnSetIcon"
+				    android:layout_width="wrap_content"
+				    android:layout_height="wrap_content"
+				    android:layout_weight="1"
+				    android:text="@string/setIcon" />
 
-                <Button
-                    android:id="@+id/btnAnimateTo"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.35"
-                    android:text="@string/animateTo" />
-
-                <Button
-                    android:id="@+id/btnSetCompassMode"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.29"
-                    android:text="@string/setCompassMode" />
-
-                <Button
-                    android:id="@+id/btnSetIcon"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.26"
-                    android:text="@string/setIcon" />
-
-            </LinearLayout>
-
-        </ScrollView>
-    </LinearLayout>
-
+			    <Button
+			        android:id="@+id/btnSetCompassMode"
+			        android:layout_width="wrap_content"
+			        android:layout_height="wrap_content"
+			        android:layout_weight="1"
+			        android:text="@string/setCompassMode" />
+															   
+			 </LinearLayout>
+		 
+		 </ScrollView>
+		 
+     </LinearLayout>
+	 
+		
 </LinearLayout>
