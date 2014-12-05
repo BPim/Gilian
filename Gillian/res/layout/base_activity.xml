@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<LinearLayout
+
+	xmlns:android="http://schemas.android.com/apk/res/android"
+
+	android:layout_width="fill_parent"
+
+	android:layout_height="fill_parent"
+
+	android:orientation="vertical"
+
+	android:background="@android:color/black">
+
+
+
+
+	<RelativeLayout
+
+		android:id="@+id/contentView"
+
+		android:layout_width="fill_parent"
+
+		android:layout_height="fill_parent" 
+
+		android:layout_weight="1" 
+
+		android:background="@android:color/white">
+
+	</RelativeLayout>
+
+
+
+
+	<FrameLayout
+
+	    android:layout_width="match_parent"
+
+	    android:layout_height="wrap_content" >
+
+
+
+
+		<LinearLayout
+
+		    android:id="@+id/base"
+
+		    android:layout_width="fill_parent"
+
+		    android:layout_height="wrap_content"
+
+		    android:orientation="vertical"
+
+		    android:paddingTop="2dip" >
+
+
+
+
+		    <ScrollView
+
+		        android:layout_width="fill_parent"
+
+		        android:layout_height="wrap_content"
+
+		        android:fillViewport="true"
+
+		        android:scrollbarStyle="outsideOverlay" >
+
+
+
+
+		        <LinearLayout
+
+		            android:layout_width="fill_parent"
+
+		            android:layout_height="fill_parent"
+
+		            android:orientation="horizontal" >
+
+
+
+
+		            <Button
+
+		                android:id="@+id/btnAnimateTo"
+
+		                android:layout_width="wrap_content"
+
+		                android:layout_height="wrap_content"
+
+		                android:layout_weight="1"
+
+		                android:text="@string/animateTo" />
+
+
+
+
+		            <Button
+
+		                android:id="@+id/btnSetIcon"
+
+		                android:layout_width="wrap_content"
+
+		                android:layout_height="wrap_content"
+
+		                android:layout_weight="1"
+
+		                android:text="@string/setIcon" />
+
+		            <Button
+		                android:id="@+id/POISearch"
+		                android:layout_width="wrap_content"
+		                android:layout_height="wrap_content"
+		                android:layout_weight="1"
+		                android:text="POI검색" />
+
+		            <Button
+
+		                android:id="@+id/btnSetCompassMode"
+
+		                android:layout_width="wrap_content"
+
+		                android:layout_height="wrap_content"
+
+		                android:layout_weight="1"
+
+		                android:text="@string/setCompassMode" />
+
+		        </LinearLayout>
+
+		    </ScrollView>
+
+		</LinearLayout>
+
+
+
+
+	<LinearLayout android:id="@+id/navi" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingTop="2dip">
+
+	    <ScrollView android:layout_width="fill_parent" android:layout_height="wrap_content" android:fillViewport="true" android:scrollbarStyle="outsideOverlay">
+
+	        <LinearLayout android:layout_width="fill_parent" android:layout_height="103dp" android:orientation="horizontal">
+
+	            <Button android:id="@+id/btncancel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/navican_str" />
+
+	            <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical">
+
+	                <TextView android:id="@+id/state" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1" android:text="TextView" />
+
+	                <TextView android:id="@+id/dis" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1" android:text="TextView" />
+	            </LinearLayout>
+	        </LinearLayout>
+	    </ScrollView>
+	</LinearLayout></FrameLayout>
+
+	
+
+</LinearLayout>
