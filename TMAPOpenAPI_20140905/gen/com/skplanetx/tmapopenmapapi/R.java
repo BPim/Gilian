@@ -29,15 +29,16 @@ public final class R {
         public static final int i_location=0x7f020009;
         public static final int ic_launcher=0x7f02000a;
         public static final int info_box=0x7f02000b;
-        public static final int map_pin_red=0x7f02000c;
-        public static final int pin_tevent=0x7f02000d;
-        public static final int poi_dot=0x7f02000e;
-        public static final int poi_img=0x7f02000f;
-        public static final int poi_popup=0x7f020010;
-        public static final int poi_star=0x7f020011;
-        public static final int popup=0x7f020012;
-        public static final int right_arrow=0x7f020013;
-        public static final int test_image=0x7f020014;
+        public static final int main_background=0x7f02000c;
+        public static final int map_pin_red=0x7f02000d;
+        public static final int pin_tevent=0x7f02000e;
+        public static final int poi_dot=0x7f02000f;
+        public static final int poi_img=0x7f020010;
+        public static final int poi_popup=0x7f020011;
+        public static final int poi_star=0x7f020012;
+        public static final int popup=0x7f020013;
+        public static final int right_arrow=0x7f020014;
+        public static final int test_image=0x7f020015;
     }
     public static final class id {
         public static final int btnAnimateTo=0x7f060004;
@@ -49,21 +50,23 @@ public final class R {
         public static final int bubble_subtitle1=0x7f060002;
         public static final int bubble_title=0x7f060001;
         public static final int contentView=0x7f060003;
+        public static final int imageView1=0x7f06000a;
         public static final int image_view=0x7f060009;
-        public static final int ledvidBtn=0x7f06000d;
-        public static final int mainLayout=0x7f06000e;
-        public static final int mainRelativeLayout=0x7f06000b;
-        public static final int mainView=0x7f06000a;
-        public static final int normalBtn=0x7f06000c;
+        public static final int ledvidBtn=0x7f06000e;
+        public static final int mainLayout=0x7f06000f;
+        public static final int mainRelativeLayout=0x7f06000c;
+        public static final int mainView=0x7f06000b;
+        public static final int normalBtn=0x7f06000d;
     }
     public static final class layout {
         public static final int aroundus_bubble_popup=0x7f030000;
         public static final int base_activity=0x7f030001;
         public static final int bubble_popup=0x7f030002;
         public static final int image_overlay=0x7f030003;
-        public static final int main_activity=0x7f030004;
-        public static final int select_activity=0x7f030005;
-        public static final int web_activity=0x7f030006;
+        public static final int loading_activity=0x7f030004;
+        public static final int main_activity=0x7f030005;
+        public static final int select_activity=0x7f030006;
+        public static final int web_activity=0x7f030007;
     }
     public static final class string {
         public static final int animateTo=0x7f050001;
