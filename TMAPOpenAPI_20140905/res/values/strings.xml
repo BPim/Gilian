@@ -10,4 +10,6 @@
 	<string name="normalBtn_str">지도 안내 </string>
 	<string name="ledvidBtn_str">LED, 진동 안내</string>
 	
+	<string name="navican_str">경로탐색 취소 </string>
+	
 </resources>

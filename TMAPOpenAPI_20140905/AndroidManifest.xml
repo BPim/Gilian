@@ -28,7 +28,6 @@
         <activity
             android:name="com.skplanetx.tmapopenmapapi.ui.MapScrollView">
         </activity>
-        <activity android:name=".ui.SelectActivity"></activity>
         
     </application>
     

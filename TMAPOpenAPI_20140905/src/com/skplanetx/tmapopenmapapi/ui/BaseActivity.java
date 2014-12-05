@@ -18,6 +18,9 @@ public class BaseActivity extends Activity implements View.OnClickListener {
 	private RelativeLayout contentView = null;
 	private static Context mCtx = null;
 	
+	private LinearLayout base ;
+	private LinearLayout navi;
+	
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -27,16 +30,32 @@ public class BaseActivity extends Activity implements View.OnClickListener {
 		
 		contentView  = (RelativeLayout)findViewById(R.id.contentView);
 		 
+		base = (LinearLayout)findViewById(R.id.base);
+		navi = (LinearLayout)findViewById(R.id.navi);
+		
+		base.setVisibility(View.VISIBLE);
+		navi.setVisibility(View.GONE);
 		
 		super.onCreate(savedInstanceState);
 		
 	}
 
+	public void goNavigation()
+	{
+		base.setVisibility(View.GONE);
+		navi.setVisibility(View.VISIBLE);
+	}
+	
+	public void cancelNavigation()
+	{
+		navi.setVisibility(View.GONE);
+		base.setVisibility(View.VISIBLE);
+		
+	}
 	@Override
 	protected void onResume() {
 		super.onResume();
 	}
-
 	
 	
 	@Override

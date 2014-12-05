@@ -35,9 +35,12 @@ import android.location.LocationManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Message;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.skp.Tmap.BizCategory;
@@ -85,7 +88,11 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	private TMapPolyLine polyLine=null; //그림그리는 객체
 	private TMapPoint pointA ;
 	private TMapData tmapdata ; 
-	private ArrayList<String> RoutePoint = new ArrayList<String>();
+	private ArrayList<TMapPoint> RoutePoint = new ArrayList<TMapPoint>();
+	private Navigation navi =null;
+	private SendMassgeHandler mMainHandler = null;
+	private int i = 0 ;
+	double oldangle;
 	
 	private Context 		mContext;
 	private ArrayList<Bitmap> mOverlayList;
@@ -94,11 +101,14 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	public static String mApiKey; // 발급받은 appKey
 	public static String mBizAppID; // 발급받은 BizAppID (TMapTapi로 TMap앱 연동을 할 때 BizAppID 꼭 필요)
 	
+	private TextView state;
+	private TextView dis;
 	private static final int[] mArrayMapButton = {
 
 		R.id.btnAnimateTo,
 		R.id.btnSetIcon,
 		R.id.btnSetCompassMode,
+		R.id.btncancel
 
 	
 	};
@@ -181,6 +191,12 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	    double longitude = location.getLongitude();  
 	    
 		TMapPoint point = new TMapPoint(latitude, longitude);
+		////////////
+		startpoint = point; 
+		state = (TextView)findViewById(R.id.state);
+		dis = (TextView)findViewById(R.id.dis);
+		mMainHandler = new SendMassgeHandler();
+		////////////		
 		mMapView.setCenterPoint(point.getLongitude(),point.getLatitude());
 		mMapView.setIconVisibility(true);
 		mMapView.setLocationPoint(point.getLongitude(),point.getLatitude());
@@ -263,97 +279,48 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 			}
 		});
 		
+
 		mMapView.setOnLongClickListenerCallback(new TMapView.OnLongClickListenerCallback() {
 			@Override
 			public void onLongPressEvent(ArrayList<TMapMarkerItem> markerlist,ArrayList<TMapPOIItem> poilist, TMapPoint point) {
-				LogManager.printLog("MainActivity onLongPressEvent " + markerlist.size());
+				LogManager.printLog("long"+point.getLatitude()+" / "+point.getLongitude()+"MainActivity onLongPressEvent " + markerlist.size());
 				
-				pointA = point;
 				
-	            //TMapPoint endpoint = new TMapPoint(point.getLatitude(), point.getLongitude());
-	            
-				//hana
-				// 출발지, 도착지 선택 알림창 부분.
-				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+				//TMapPoint startpoint = start; 
+				TMapData tmapdata = new TMapData(); 
+				TMapPoint endpoint = new TMapPoint(point.getLatitude(), point.getLongitude());
+				TMapPolyLine polyLine=null;
+				try {
+					polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
+				} catch (MalformedURLException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ParserConfigurationException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (FactoryConfigurationError e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (SAXException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} 
 				
-				builder.setTitle("출발지/도착지를 선택하세요"); // 제목 설정
+				for(TMapPoint tmp : polyLine.getLinePoint()){
+					RoutePoint.add(tmp);
+					LogManager.printLog("abc"+tmp.toString());
+				}
 				
-				builder.setCancelable(true); // 뒤로 버튼 클릭시 취소 가능 설정
-				builder.setPositiveButton("출발", new DialogInterface.OnClickListener() {
-					
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						// TODO Auto-generated method stub
-						// 출발 버튼 클릭시 설정
-						startpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());		
-						
-					}
-				});
-				
-				builder.setNegativeButton("도착", new DialogInterface.OnClickListener() {
-					
-					@Override
-					public void onClick(DialogInterface dialog, int which) {
-						// TODO Auto-generated method stub
-						// 도착 버튼 클릭시 설정
-						endpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());
-						tmapdata = new TMapData(); 
-						
-						if(startpoint == null)
-						{
-							///////////////////////////여기가 안돼요
-							Toast.makeText(getApplicationContext(), "출발 확인", Toast.LENGTH_LONG).show();
-							AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-							builder.setTitle("출발지를 선택해 주세요") ;
-							
-							builder.setNegativeButton("확인", new DialogInterface.OnClickListener() {
-
-								@Override
-								public void onClick(DialogInterface dialog, int which) {
-									// TODO Auto-generated method stub
-									dialog.cancel();
-								}
-							});
-						}else{
-						}
-						
-							// 경로설정
-							try {
-								polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
-								
-								for (TMapPoint temp : polyLine.getLinePoint())
-								{
-									LogManager.printLog("point "+temp.toString());
-									RoutePoint.add(temp.toString());
-								}
-							} catch (MalformedURLException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (IOException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (ParserConfigurationException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (FactoryConfigurationError e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							} catch (SAXException e) {
-								// TODO Auto-generated catch block
-								e.printStackTrace();
-							}
-			            
-							mMapView.addTMapPolyLine("Go Home",polyLine);
-							
-						
-					}
-				});
-				
-
-				AlertDialog dialog = builder.create();    // 알림창 객체 생성
-				dialog.show();    // 알림창 띄우기
+				showMarkerPoint(startpoint, "출발지", "출발지");
+				showMarkerPoint(endpoint, "목적지", "목적지");
+				mMapView.addTMapPolyLine("Go Home",polyLine);
+				LogManager.printLog("long end ");
 			}
 		});
+
 		
 		mMapView.setOnCalloutRightButtonClickListener(new TMapView.OnCalloutRightButtonClickCallback() {
 			@Override
@@ -400,6 +367,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 			mOverlayList.clear();
 		}
 		//Debug.stopMethodTracing();
+		navi.stopNavigation();
 		System.gc() ;
 	}
 	
@@ -411,11 +379,14 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		switch(v.getId()) {
 		
 		case R.id.btnAnimateTo		  : 	animateTo(); 			break;
-		case R.id.btnSetIcon		  :		goSelectActivity();			break; //나중에 수정하기
+		case R.id.btnSetIcon		  :		goNavi();				break; //나중에 수정하기
 		case R.id.btnSetCompassMode   :		setCompassMode();		break;
+		case R.id.btncancel			  :     cacelNavi();			break;
 		}
 	} 
 	
+
+
 	public TMapPoint randomTMapPoint() {
 		LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
 		
@@ -431,43 +402,57 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		return point;
 	}
 	
-	public void overlay() {
-		m_bOverlayMode = !m_bOverlayMode;
-		if(m_bOverlayMode) {
-			mMapView.setZoomLevel(6);
-			
-			if(mOverlay == null){
-				mOverlay = new ImageOverlay(this, mMapView);
-			}
-			
-			mOverlay.setLeftTopPoint(new TMapPoint(45.640171, 114.9652948));
-			mOverlay.setRightBottomPoint(new TMapPoint(29.2267177, 138.7206798));
-			mOverlay.setImage(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.test_image));
-			
-			if(mOverlayList == null){
-				mOverlayList = new ArrayList<Bitmap>();
-				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.test_image));
-				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.ani1));
-				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.ani2));
-			}
-			
-			mOverlay.setAnimationIcons(mOverlayList);
-			mOverlay.setAniDuration(10000);
-			mOverlay.startAnimation();
-			mMapView.addTMapOverlayID(0, mOverlay);
-		} else {
-			mOverlay.stopAnimation();
-			mMapView.removeTMapOverlayID(0);
-		}
-	}
-	public void goSelectActivity()
-	{
+//	public void overlay() {
+//		m_bOverlayMode = !m_bOverlayMode;
+//		if(m_bOverlayMode) {
+//			mMapView.setZoomLevel(6);
+//			
+//			if(mOverlay == null){
+//				mOverlay = new ImageOverlay(this, mMapView);
+//			}
+//			
+//			mOverlay.setLeftTopPoint(new TMapPoint(45.640171, 114.9652948));
+//			mOverlay.setRightBottomPoint(new TMapPoint(29.2267177, 138.7206798));
+//			mOverlay.setImage(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.test_image));
+//			
+//			if(mOverlayList == null){
+//				mOverlayList = new ArrayList<Bitmap>();
+//				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.test_image));
+//				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.ani1));
+//				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.ani2));
+//			}
+//			
+//			mOverlay.setAnimationIcons(mOverlayList);
+//			mOverlay.setAniDuration(10000);
+//			mOverlay.startAnimation();
+//			mMapView.addTMapOverlayID(0, mOverlay);
+//		} else {
+//			mOverlay.stopAnimation();
+//			mMapView.removeTMapOverlayID(0);
+//		}
+//	}
+	public void goNavi()
+	{/*
 		Intent intent = new Intent(getApplicationContext(), SelectActivity.class);
 		
 		//intent.putStringArrayListExtra("route", tmapdata);
 		intent.putStringArrayListExtra("RoutePoint", RoutePoint);
 		startActivity(intent);
+		finish();*/
+//		//////////////////////////////////////
+		goNavigation();
+		navi= new Navigation();
+		navi.set(polyLine, mMapView, getBaseContext());
+		navi.start();
+		
 	}
+	
+	private void cacelNavi() {
+		// TODO Auto-generated method stub
+		cancelNavigation();
+		navi.stopNavigation();
+	}
+
 	public void animateTo() {
 		TMapPoint point = randomTMapPoint();
 		mMapView.setIconVisibility(true);
@@ -475,7 +460,140 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		mMapView.setCenterPoint(point.getLongitude(), point.getLatitude(), true);
 		mMapView.setLocationPoint(point.getLongitude(), point.getLatitude());
 	}
-	
+	// Handler 클래스
+    class SendMassgeHandler extends Handler {
+         
+        @Override
+        public void handleMessage(Message msg) {
+        	boolean ok = false;
+            super.handleMessage(msg);
+            TMapPoint po = (TMapPoint) msg.obj;
+            
+//            double old_distance;
+            double distance = 0 ; 
+            double angle = 0 ; 
+            
+            
+           ////////////////
+           
+            
+            mMapView.setCenterPoint(po.getLongitude(), po.getLatitude());
+            showMarkerPoint2(po);
+            
+            LogManager.printLog("now "+po.getLongitude()+"/"+po.getLatitude());
+            TMapPoint back = RoutePoint.get(i);
+            LogManager.printLog("RoutePoint 1 "+back.getLongitude()+"/"+back.getLatitude());
+            try{
+            TMapPoint front = RoutePoint.get(i+1);
+            LogManager.printLog("RoutePoint 2 "+front.getLongitude()+"/"+front.getLatitude());
+            
+            
+            angle = po.getLongitude()-front.getLongitude()/(po.getLatitude()-front.getLatitude());
+            // 거리 뒤 점과 앞의 점의 직선이 방정식에서 0.0002 보다 멀리 떨어지면 경로 이탈
+            if((distance=findLine(front, back, po))<0.0002)
+            	ok= true;
+            
+            dis.setText(String.valueOf(distance));
+            
+            // 다음 점 보다 더 많이 가면 i ++;
+            if((po.getLatitude()>front.getLatitude())&&(po.getLongitude()>front.getLongitude())){
+            	i++;
+            	oldangle=(po.getLongitude()-front.getLongitude())/(po.getLatitude()-front.getLatitude());
+            	dis.append("oldan/"+oldangle);
+            }
+            }
+            catch(IndexOutOfBoundsException e){
+            	
+            }
+            
+            try{
+             TMapPoint fff = RoutePoint.get(i+3);
+             angle = (po.getLongitude()-fff.getLongitude())/ (po.getLatitude()-fff.getLatitude());
+             dis.append("ang/"+angle);
+            }catch( IndexOutOfBoundsException e){
+            	
+            }
+//            oldangle = 
+            
+            dis.append("/ i "+Integer.toString(i));
+            
+            	state.append("END!!");
+            	LogManager.printLog("END!!");
+
+            LogManager.printLog(String.valueOf(distance));
+            
+            state.setText("now "+po.getLongitude()+"/"+po.getLatitude());
+            
+            if(ok)
+            {
+            	state.append("YES!!");
+            	LogManager.printLog("YES!!");
+            }
+        }
+         
+    };
+	double findLine(TMapPoint front, TMapPoint back, TMapPoint nowLocation)
+	{
+		double x1 = back.getLongitude();
+		double x2 = front.getLongitude();
+		double y1 = back.getLatitude();
+		double y2 = front.getLatitude();
+		
+		double a = nowLocation.getLongitude();
+		double b = nowLocation.getLatitude();
+		
+		double ki = (y1-y2)/(x1-x2);
+		
+		double d = Math.abs(b-(ki)*a+x1*ki-y1)/(Math.sqrt((a*a) + (b*b)));
+		return d;
+	}
+
+	class Navigation extends Thread{
+		TMapPolyLine polyLine;
+		TMapView mMapView ; 
+		Context mContext;
+		boolean r = true;
+		TMapPoint point;
+		
+		public void set(TMapPolyLine polyLine, TMapView mMapView, Context mContext )
+		{
+			this.polyLine=polyLine;
+			this.mMapView = mMapView;
+			this.mContext = mContext;
+			
+		}
+		
+		public void stopNavigation()
+		{
+			r=false;
+		}
+		
+		public void restartNavigation()
+		{
+			r=true;
+		}
+		
+		public void run()
+		{
+			while(r)
+			{
+				Message msg = mMainHandler.obtainMessage();
+				
+				point = randomTMapPoint();
+				msg.obj = point;
+				mMainHandler.sendMessage(msg);
+//				mMapView.setCenterPoint(point.getLongitude(), point.getLatitude(), true);
+//				mMapView.setLocationPoint(point.getLongitude(), point.getLatitude());
+				
+				try {
+					Thread.sleep(1000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+			}
+		}
+	}
 	public Map<String, AroundusItems> mAroundusItemHash = new LinkedHashMap<String, AroundusItems>();
 	
 	public void setAroundus() {
@@ -797,60 +915,48 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		//mMapView.showCallOutViewWithMarkerItemID("02");
 	}
 	
-	public void showMarkerPoint2() {
-		ArrayList<Bitmap> list = null;
-		for(int i = 0; i < 50; i++) {
-			
-			MarkerOverlay marker1 = new MarkerOverlay(this, mMapView);
-			String strID = String.format("%02d", i);
-			
-			marker1.setID(strID);
-			marker1.setIcon(BitmapFactory.decodeResource(getResources(), R.drawable.map_pin_red));		
-			marker1.setTMapPoint(randomTMapPoint());
-			
-			if(list == null){
-				 list = new ArrayList<Bitmap>();
-			}
-			
-			list.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.map_pin_red));
-			list.add(BitmapFactory.decodeResource(mContext.getResources(),R.drawable.end));
-			
-			marker1.setAnimationIcons(list);
-			//marker1.setAniDuration(1000);
-			
-			//marker1.startAnimation();
-			mMapView.addMarkerItem2(strID, marker1);
-			
-		}
-				
-		mMapView.setOnMarkerClickEvent(new TMapView.OnCalloutMarker2ClickCallback() {
-			
-			@Override
-			public void onCalloutMarker2ClickEvent(String id, TMapMarkerItem2 markerItem2) {
-				LogManager.printLog("ClickEvent " + " id " + id + " " + markerItem2.latitude + " " +  markerItem2.longitude);
-				
-				String strMessage = "ClickEvent " + " id " + id + " " + markerItem2.latitude + " " +  markerItem2.longitude;
-				
-				Common.showAlertDialog(MainActivity.this, "TMapMarker2", strMessage);
-			}
-		});
+	public void showMarkerPoint2(TMapPoint point) {
 		
-	}
+
+		Bitmap bitmap = null;
+		//TMapPoint point = new TMapPoint(37.566474, 126.985022);
+		TMapMarkerItem item1 = new TMapMarkerItem();
+		
+		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.poi_star);
+				
+		item1.setTMapPoint(point);
+//		item1.setName("SKT타워");
+		item1.setVisible(item1.VISIBLE);
+	
+		item1.setIcon(bitmap);
+		LogManager.printLog("bitmap " + bitmap.getWidth() + " " + bitmap.getHeight());
+		
+		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.i_location);		
+		item1.setCalloutTitle("현재위치");
+//		item1.setCalloutSubTitle(subtitle);
+		item1.setCanShowCallout(true);
+		item1.setAutoCalloutVisible(true);
+		
+		Bitmap bitmap_i = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.i_go);
+		
+		
+		mMapView.addMarkerItem(" ", item1);
+		
+		//item1.setCalloutLeftImage(bitmap);
+		item1.setCalloutRightButtonImage(bitmap_i);}
 	
 	/**
 	 * showMarkerPoint
 	 * 지도에 마커를 표출한다. 
 	 */
-	public void showMarkerPoint()
+	public void showMarkerPoint(TMapPoint point, String title, String subtitle)
 	{	
 
 		Bitmap bitmap = null;
-		
-		TMapPoint point = new TMapPoint(37.566474, 126.985022);
-				
+		//TMapPoint point = new TMapPoint(37.566474, 126.985022);
 		TMapMarkerItem item1 = new TMapMarkerItem();
 		
-		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.i_location);
+		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.map_pin_red);
 				
 		item1.setTMapPoint(point);
 		item1.setName("SKT타워");
@@ -860,119 +966,18 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		LogManager.printLog("bitmap " + bitmap.getWidth() + " " + bitmap.getHeight());
 		
 		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.i_location);		
-		item1.setCalloutTitle("SKT타워");
-		item1.setCalloutSubTitle("을지로입구역 500M");
+		item1.setCalloutTitle(title);
+		item1.setCalloutSubTitle(subtitle);
 		item1.setCanShowCallout(true);
 		item1.setAutoCalloutVisible(true);
 		
 		Bitmap bitmap_i = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.i_go);
 		
 		
+		mMapView.addMarkerItem(" ", item1);
 		
 		//item1.setCalloutLeftImage(bitmap);
 		item1.setCalloutRightButtonImage(bitmap_i);
-
-		String strID = String.format("pmarker%d", mMarkerID++);
-		
-		mMapView.addMarkerItem(strID, item1);
-		mArrayMarkerID.add(strID);
-		
-		
-		point = new TMapPoint(37.55102510077652, 126.98789834976196);
-		TMapMarkerItem item2 = new TMapMarkerItem();
-
-		item2.setTMapPoint(point);
-		item2.setName("N서울타워");
-		item2.setVisible(item2.VISIBLE);
-		item2.setCalloutTitle("청호타워 4층");
-		
-		//item2.setCalloutSubTitle("을지로입구역 500M");
-		
-		item2.setCanShowCallout(true);
-		
-		
-		//item2.setAutoCalloutVisible(true);
-		
-		//item2.setCalloutLeftImage(bitmap);
-		
-		bitmap_i = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.i_go);		
-		item2.setCalloutRightButtonImage(bitmap_i);
-				
-		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.pin_tevent);
-		item2.setIcon(bitmap);
-
-		strID = String.format("pmarker%d", mMarkerID++);
-		
-		mMapView.addMarkerItem(strID, item2);
-		mArrayMarkerID.add(strID);
-		
-		
-		point = new TMapPoint(37.58102510077652, 126.98789834976196);
-		item2 = new TMapMarkerItem();
-
-		item2.setTMapPoint(point);
-		item2.setName("N서울타워");
-		item2.setVisible(item2.VISIBLE);
-		item2.setCalloutTitle("창덕궁 청호타워 4층");
-		
-		item2.setCalloutSubTitle("을지로입구역 500M");
-		item2.setCanShowCallout(true);
-		
-			
-		bitmap_i = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.i_go);		
-		item2.setCalloutRightButtonImage(bitmap_i);
-				
-		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.map_pin_red);
-		item2.setIcon(bitmap);
-
-		strID = String.format("pmarker%d", mMarkerID++);
-		
-		mMapView.addMarkerItem(strID, item2);
-		mArrayMarkerID.add(strID);
-				
-		point = new TMapPoint(37.58102510077652, 126.99789834976196);
-		item2 = new TMapMarkerItem();
-
-		item2.setTMapPoint(point);
-		item2.setName("N서울타워");
-		item2.setVisible(item2.VISIBLE);
-		item2.setCalloutTitle("대학로 혜화역111111");
-				
-		item2.setCanShowCallout(true);
-				
-		item2.setCalloutLeftImage(bitmap);
-		
-		bitmap_i = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.i_go);		
-		item2.setCalloutRightButtonImage(bitmap_i);
-				
-		
-		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.end);
-		item2.setIcon(bitmap);
-
-		strID = String.format("pmarker%d", mMarkerID++);
-		
-		mMapView.addMarkerItem(strID, item2);
-		mArrayMarkerID.add(strID);
-	
-		for(int i = 4; i < 10; i++) {
-			TMapMarkerItem item3 = new TMapMarkerItem();
-			
-			item3.setID(strID);
-			item3.setIcon(BitmapFactory.decodeResource(getResources(), R.drawable.map_pin_red));
-
-			item3.setVisible(item3.VISIBLE);
-			item3.setTMapPoint(randomTMapPoint());
-			item3.setCalloutTitle(">>>>" + strID + "<<<<<");
-			item3.setCanShowCallout(true);
-			
-			//marker1.startAnimation();
-
-			strID = String.format("pmarker%d", mMarkerID++);
-			
-			mMapView.addMarkerItem(strID, item2);
-			mArrayMarkerID.add(strID);
-			
-		}
 	}
 	
 		
