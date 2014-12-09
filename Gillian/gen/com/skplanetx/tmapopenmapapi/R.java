@@ -24,17 +24,18 @@ public final class R {
         public static final int i_go=0x7f020004;
         public static final int i_location=0x7f020005;
         public static final int ic_launcher=0x7f020006;
-        public static final int info_box=0x7f020007;
-        public static final int main_background=0x7f020008;
-        public static final int map_pin_red=0x7f020009;
-        public static final int pin_tevent=0x7f02000a;
-        public static final int poi_dot=0x7f02000b;
-        public static final int poi_img=0x7f02000c;
-        public static final int poi_popup=0x7f02000d;
-        public static final int poi_star=0x7f02000e;
-        public static final int popup=0x7f02000f;
-        public static final int right_arrow=0x7f020010;
-        public static final int test_image=0x7f020011;
+        public static final int icon=0x7f020007;
+        public static final int info_box=0x7f020008;
+        public static final int main_background=0x7f020009;
+        public static final int map_pin_red=0x7f02000a;
+        public static final int pin_tevent=0x7f02000b;
+        public static final int poi_dot=0x7f02000c;
+        public static final int poi_img=0x7f02000d;
+        public static final int poi_popup=0x7f02000e;
+        public static final int poi_star=0x7f02000f;
+        public static final int popup=0x7f020010;
+        public static final int right_arrow=0x7f020011;
+        public static final int test_image=0x7f020012;
     }
     public static final class id {
         public static final int POISearch=0x7f060007;
