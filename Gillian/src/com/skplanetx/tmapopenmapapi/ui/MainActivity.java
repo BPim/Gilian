@@ -20,7 +20,11 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.xml.sax.SAXException;
 
+import android.app.Activity;
 import android.app.AlertDialog;
+import android.app.ProgressDialog;
+import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -37,12 +41,20 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
+import android.view.Window;
+import android.view.View.OnClickListener;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.skplanetx.tmapopenmapapi.bluetooth.*;
 import com.skp.Tmap.BizCategory;
 import com.skp.Tmap.TMapCircle;
 import com.skp.Tmap.TMapData;
@@ -69,6 +81,7 @@ import com.skp.Tmap.TMapView.MapCaptureImageListenerCallback;
 import com.skp.Tmap.TMapView.TMapLogoPositon;
 import com.skplanetx.tmapopenmapapi.LogManager;
 import com.skplanetx.tmapopenmapapi.R;
+import com.skplanetx.tmapopenmapapi.bluetooth.BluetoothChatService;
 
 public class MainActivity extends BaseActivity implements onLocationChangedCallback
 {
@@ -84,32 +97,84 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	
 
 	private TMapPoint startpoint = null;
-	private TMapPoint endpoint= null;
-	private TMapPolyLine polyLine=null; //그림그리는 객체
+//	private TMapPoint endpoint= null;
+	private TMapPolyLine polyLine=null; //그림그리??객체
 	private TMapPoint pointA ;
 	
 	private TMapData tmapdata ; 
-	private ArrayList<TMapPoint> RoutePoint = new ArrayList<TMapPoint>();
+	private ArrayList<TMapPoint> RoutePoint ;
 	private Navigation navi =null;
 	private SendMassgeHandler mMainHandler = null;
-	private int i = 0 ;
+	private int i = 1 ;
 	double oldangle;
 	
 	 private Context 		mContext;
 	private ArrayList<Bitmap> mOverlayList;
 	private ImageOverlay mOverlay;
 
-	public static String mApiKey; // 발급받은 appKey
-	public static String mBizAppID; // 발급받은 BizAppID (TMapTapi로 TMap앱 연동을 할 때 BizAppID 꼭 필요)
+	public static String mApiKey; // 발급받�? appKey
+	public static String mBizAppID; // 발급받�? BizAppID (TMapTapi�?TMap???�동??????BizAppID �??�요)
 	private TextView state;
 	private TextView dis;
+	private Button seticon ;
 	
+	private boolean isDevice = false;
+//	private boolean selectFinish=false;
+	 AlertDialog alert;
+	
+	private ImageView goStraight ;
+	private ImageView turnLeft;
+	private ImageView turnRight;
+	
+	//////////////// bluetooth 
+	private Activity myActivity ;
+	   private static final String TAG = "MainActivity";
+	    private static final boolean D = true;
+
+	    // Message types sent from the BluetoothChatService Handler
+	    public static final int MESSAGE_STATE_CHANGE = 1;
+	    public static final int MESSAGE_READ = 2;
+	    public static final int MESSAGE_WRITE = 3;
+	    public static final int MESSAGE_DEVICE_NAME = 4;
+	    public static final int MESSAGE_TOAST = 5;
+
+	    // Key names received from the BluetoothChatService Handler
+	    public static final String DEVICE_NAME = "device_name";
+	    public static final String TOAST = "toast";
+
+	    // Intent request codes
+	    private static final int REQUEST_CONNECT_DEVICE_SECURE = 1;
+	    private static final int REQUEST_CONNECT_DEVICE_INSECURE = 2;
+	    private static final int REQUEST_ENABLE_BT = 3;
+
+
+	    // Name of the connected device
+	    private String mConnectedDeviceName = null;
+	    // Array adapter for the conversation thread
+//	    private ArrayAdapter<String> mConversationArrayAdapter;
+	    // String buffer for outgoing messages
+	    private StringBuffer mOutStringBuffer;
+	    // Local Bluetooth adapter
+	    private BluetoothAdapter mBluetoothAdapter = null;
+	    // Member object for the chat services
+	    private BluetoothChatService mChatService = null;
+
+	    private ProgressDialog mProgressDialog;
+	    
+	    private String leftDevice ="0";
+	    private String rightDevice ="1" ;
+	    private String goDevice="2";
+	    private String arriveDevice="4";
+	    
+    Intent serverIntent = null;
+    
+    ///////////////
 	private static final int[] mArrayMapButton = {
 
 		R.id.btnAnimateTo,
 		R.id.btnSetIcon,
-		R.id.btnSetCompassMode,
 		R.id.POISearch,
+		R.id.btnSetCompassMode,
 		R.id.btncancel
 	
 	};
@@ -141,6 +206,14 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 	
 	TMapGpsManager gps = null;
 
+
+	protected Handler mHandler1;
+
+
+	TMapPoint prepo;
+
+
+
 	
 	/**
 	 * onCreate() 
@@ -150,9 +223,9 @@ public class MainActivity extends BaseActivity implements onLocationChangedCallb
 		super.onCreate(savedInstanceState);
 		
 		setContentView(R.layout.main_activity);
+		
 		startActivity(new Intent(this,LoadingActivity.class));
-
-
+		setTitle("");
 
 		mContext = this;
 		
@@ -199,17 +272,32 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		mMapView.setIconVisibility(true);
 		mMapView.setLocationPoint(point.getLongitude(),point.getLatitude());
 		
-		startpoint = point; 
+		
+		seticon = (Button)findViewById(mArrayMapButton[1]);
+		seticon.setEnabled(false);
+
+//        /////////////////////////////////////
 	    state = (TextView)findViewById(R.id.state);
 	    dis = (TextView)findViewById(R.id.dis);
+//	    
+	    goStraight = (ImageView)findViewById(R.id.go_straight);
+		turnLeft= (ImageView)findViewById(R.id.turn_left);
+		turnRight= (ImageView)findViewById(R.id.turn_right);
+		
+    	goStraight.setVisibility(View.GONE);
+    	turnLeft.setVisibility(View.GONE);
+    	turnRight.setVisibility(View.GONE);
+    	//////////// bluetooth Ac
+    	myActivity= this;
+    	
 	    mMainHandler = new SendMassgeHandler();
 	      
 	}
 
 	/**
-	 * setSKPMapApiKey()에 ApiKey를 입력 한다.
-	 * setSKPMapBizappId()에 mBizAppID를 입력한다.
-	 * -> setSKPMapBizappId는 TMapTapi(TMap앱 연동)를 사용할때 BizAppID 설정 해야 한다. TMapTapi 사용하지 않는다면 setSKPMapBizappId를 하지 않아도 된다.
+	 * setSKPMapApiKey()??ApiKey�??�력 ?�다.
+	 * setSKPMapBizappId()??mBizAppID�??�력?�다.
+	 * -> setSKPMapBizappId??TMapTapi(TMap???�동)�??�용?�때 BizAppID ?�정 ?�야 ?�다. TMapTapi ?�용?��? ?�는?�면 setSKPMapBizappId�??��? ?�아???�다.
 	 */
 	private void configureMapView() {
 		mMapView.setSKPMapApiKey("1ca0c796-467a-34a5-bceb-773d01c98ae0");
@@ -217,7 +305,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	}
 
 	/**
-	 * initView - 버튼에 대한 리스너를 등록한다. 
+	 * initView - 버튼????�� 리스?��? ?�록?�다. 
 	 */
 	private void initView() {	
 		for (int btnMapView : mArrayMapButton) {
@@ -289,6 +377,18 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 				LogManager.printLog("MainActivity onLongPressEvent " + markerlist.size());
 				 TMapData tmapdata = new TMapData(); 
 		            TMapPoint endpoint = new TMapPoint(point.getLatitude(), point.getLongitude());
+				 
+		            LocationManager locationManager = (LocationManager) myActivity.getSystemService(Context.LOCATION_SERVICE);
+		    		
+		    		Location location = locationManager
+		    	                .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
+
+		    		double latitude = location.getLatitude();
+		    	    double longitude = location.getLongitude();  
+		    	    
+		    		startpoint = new TMapPoint(latitude, longitude);
+		    		
+		    		
 		            TMapPolyLine polyLine=null;
 		            try {
 		                polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
@@ -307,103 +407,20 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		             } catch (SAXException e) {
 		                // TODO Auto-generated catch block
 		                e.printStackTrace();
-		             } 
+		             }
+		            RoutePoint = new ArrayList<TMapPoint>();
 		            for(TMapPoint tmp : polyLine.getLinePoint()){
 		                RoutePoint.add(tmp);
-		                LogManager.printLog("abc"+tmp.toString());
+		                LogManager.printLog("route "+tmp.toString());
 		             }
 		             
-		             showMarkerPoint(startpoint, "출발지", "출발지");
-		             showMarkerPoint(endpoint, "목적지", "목적지");
+		             showMarkerPoint(startpoint, "출발지", "");
+		             showMarkerPoint(endpoint, "목적지", "");
 		             mMapView.addTMapPolyLine("Go Home",polyLine);
 		             LogManager.printLog("long end ");
-//				pointA = point;
-//				
-//	            //TMapPoint endpoint = new TMapPoint(point.getLatitude(), point.getLongitude());
-//	            
-//				//hana
-//				// 출발지, 도착지 선택 알림창 부분.
-//				AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-//				
-//				builder.setTitle("출발지/도착지를 선택하세요"); // 제목 설정
-//				
-//				builder.setCancelable(true); // 뒤로 버튼 클릭시 취소 가능 설정
-//				builder.setPositiveButton("출발", new DialogInterface.OnClickListener() {
-//					
-//					@Override
-//					public void onClick(DialogInterface dialog, int which) {
-//						// TODO Auto-generated method stub
-//						// 출발 버튼 클릭시 설정
-//						startpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());		
-//						
-//					}
-//				});
-//				
-//				builder.setNegativeButton("도착", new DialogInterface.OnClickListener() {
-//					
-//					@Override
-//					public void onClick(DialogInterface dialog, int which) {
-//						// TODO Auto-generated method stub
-//						// 도착 버튼 클릭시 설정
-//						endpoint = new TMapPoint(pointA.getLatitude(), pointA.getLongitude());
-//						TMapData tmapdata = new TMapData(); 
-//						
-//						if(startpoint == null)
-//						{
-//							///////////////////////////여기가 안돼요
-//							Toast.makeText(getApplicationContext(), "출발 확인", Toast.LENGTH_LONG).show();
-//							AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
-//							builder.setTitle("출발지를 선택해 주세요") ;
-//							
-//							builder.setNegativeButton("확인", new DialogInterface.OnClickListener() {
-//
-//								@Override
-//								public void onClick(DialogInterface dialog, int which) {
-//									// TODO Auto-generated method stub
-//									dialog.cancel();
-//								}
-//							});
-//						}else{
-//						}
-//						
-//							// 경로설정
-//							try {
-//								polyLine = tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, startpoint, endpoint);
-//							} catch (MalformedURLException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							} catch (IOException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							} catch (ParserConfigurationException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							} catch (FactoryConfigurationError e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							} catch (SAXException e) {
-//								// TODO Auto-generated catch block
-//								e.printStackTrace();
-//							}
-//			            
-//							mMapView.addTMapPolyLine("Go Home",polyLine);
-//							//도착버튼 누르면 출발지로 이동////////////////////////////////////
-////							LocationManager locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-////							
-////							Location location = locationManager
-////						                .getLastKnownLocation(LocationManager.NETWORK_PROVIDER);
-////
-////							double latitude = location.getLatitude();
-////						    double longitude = location.getLongitude();  
-////						    
-////							TMapPoint point = new TMapPoint(latitude, longitude);
-////							mMapView.setCenterPoint(point.getLongitude(),point.getLatitude());
-//						
-//					}
-//				});
-				
-//				AlertDialog dialog = builder.create();    // 알림창 객체 생성
-//				dialog.show();    // 알림창 띄우기
+		             
+		             seticon.setEnabled(true);
+
 			}
 		});
 		
@@ -463,9 +480,9 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		switch(v.getId()) {
 		
 		 case R.id.btnAnimateTo        :    animateTo();          break;
-	      case R.id.btnSetIcon        :      goNavi();            break; //나중에 수정하기
+	      case R.id.btnSetIcon        :      goNavi();            break; //?�중???�정?�기
 	      case R.id.btnSetCompassMode   :      setCompassMode();      break;
-	      case R.id.btncancel           :     cacelNavi();         break;
+	      case R.id.btncancel           :     cancelNavi();         break;
 	      case R.id.POISearch			:		findAllPoi();	break;
 		}
 	} 
@@ -484,37 +501,6 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		
 		return point;
 	}
-	
-	public void overlay() {
-		m_bOverlayMode = !m_bOverlayMode;
-		if(m_bOverlayMode) {
-			mMapView.setZoomLevel(6);
-			
-			if(mOverlay == null){
-				mOverlay = new ImageOverlay(this, mMapView);
-			}
-			
-			mOverlay.setLeftTopPoint(new TMapPoint(45.640171, 114.9652948));
-			mOverlay.setRightBottomPoint(new TMapPoint(29.2267177, 138.7206798));
-			mOverlay.setImage(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.test_image));
-			
-			if(mOverlayList == null){
-				mOverlayList = new ArrayList<Bitmap>();
-				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.test_image));
-				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.ani1));
-				mOverlayList.add(BitmapFactory.decodeResource(mContext.getResources(), R.drawable.ani2));
-			}
-			
-			mOverlay.setAnimationIcons(mOverlayList);
-			mOverlay.setAniDuration(10000);
-			mOverlay.startAnimation();
-			mMapView.addTMapOverlayID(0, mOverlay);
-		} else {
-			mOverlay.stopAnimation();
-			mMapView.removeTMapOverlayID(0);
-		}
-	}
-	
 	public void animateTo() {
 		TMapPoint point = randomTMapPoint();
 		mMapView.setIconVisibility(true);
@@ -523,96 +509,278 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		mMapView.setLocationPoint(point.getLongitude(), point.getLatitude());
 	}
 	  public void goNavi()
-	   {/*
-	      Intent intent = new Intent(getApplicationContext(), SelectActivity.class);
-	      
-	      //intent.putStringArrayListExtra("route", tmapdata);
-	      intent.putStringArrayListExtra("RoutePoint", RoutePoint);
-	      startActivity(intent);
-	      finish();*/
-//	      //////////////////////////////////////
-	      goNavigation();
-	      navi= new Navigation();
-	      navi.set(polyLine, mMapView, getBaseContext());
-	      navi.start();
-	      
+	   {
+		  
+		    AlertDialog.Builder alt_bld = new AlertDialog.Builder(this);
+		    alt_bld.setMessage("어떻게 안내 받으시겠습니까? ^0^").setCancelable(
+		        false).setPositiveButton("지도 안내 ",
+		        new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int id) {
+		            // Action for 'Yes' Button
+		        	isDevice=false;
+		        	//////////////////
+		  	      goNavigation();
+			      navi= new Navigation();
+			      navi.set(polyLine, mMapView, getBaseContext());
+			      navi.start();
+			      
+			      ////////////////////
+		        }
+		        }).setNegativeButton("LED, 진동 안내",
+		        new DialogInterface.OnClickListener() {
+		        public void onClick(DialogInterface dialog, int id) {
+		            // Action for 'NO' Button
+		        	isDevice=true;
+				    
+		        	blueCreate();
+		        	blueStart();
+//		        	blueResume();
+		        	Selected();
+
+		        }
+		        });
+		    alert = alt_bld.create();
+		    // Title for AlertDialog
+		    alert.setTitle("Gillian");
+		    // Icon for AlertDialog
+//		    alert.setIcon(R.drawable.icon);
+		    alert.show();
+	    
 	   }
 	   
-	   private void cacelNavi() {
+	   private void cancelNavi() {
 	      // TODO Auto-generated method stub
+		i = 0 ;
+		isDevice=false;
 	      cancelNavigation();
 	      navi.stopNavigation();
+	      mMapView.removeTMapPolyLine("Go Home");
+	      mMapView.removeMarkerItem("now");
+	      mMapView.removeMarkerItem("mok");
+	      seticon.setEnabled(false);
+	    	goStraight.setVisibility(View.GONE);
+	    	turnLeft.setVisibility(View.GONE);
+	    	turnRight.setVisibility(View.GONE);
+	    	RoutePoint.clear();
+	      animateTo();
+			
+	      
 	   }
-	   // Handler 클래스
+	   // Handler ?�래??
 	    class SendMassgeHandler extends Handler {
 	        @Override
 	        public void handleMessage(Message msg) {
-	           boolean ok = false;
-	            super.handleMessage(msg);
-	            TMapPoint po = (TMapPoint) msg.obj;
-	            
-//	            double old_distance;
-	            double distance = 0 ; 
-	            double angle = 0 ; 
-	            
-	            mMapView.setCenterPoint(po.getLongitude(), po.getLatitude());
-	            showMarkerPoint3(po);
-	            
-	            LogManager.printLog("now "+po.getLongitude()+"/"+po.getLatitude());
-	            TMapPoint back = RoutePoint.get(i);
-	            LogManager.printLog("RoutePoint 1 "+back.getLongitude()+"/"+back.getLatitude());
-	            try{
-	            TMapPoint front = RoutePoint.get(i+1);
-	            LogManager.printLog("RoutePoint 2 "+front.getLongitude()+"/"+front.getLatitude());
-	            angle = po.getLongitude()-front.getLongitude()/(po.getLatitude()-front.getLatitude());
-	            // 거리 뒤 점과 앞의 점의 직선이 방정식에서 0.0002 보다 멀리 떨어지면 경로 이탈
-	            if((distance=findLine(front, back, po))<0.0002)
-	               ok= true;
-	            
-	            dis.setText(String.valueOf(distance));
-	            
-	            // 다음 점 보다 더 많이 가면 i ++;
-	            if((po.getLatitude()>front.getLatitude())&&(po.getLongitude()>front.getLongitude())){
-	               i++;
-	               oldangle=(po.getLongitude()-front.getLongitude())/(po.getLatitude()-front.getLatitude());
-	               dis.append("oldan/"+oldangle);
-	            }
-	            }
-	            catch(IndexOutOfBoundsException e){
-	            }
-	            try{
-	                TMapPoint fff = RoutePoint.get(i+3);
-	                angle = (po.getLongitude()-fff.getLongitude())/ (po.getLatitude()-fff.getLatitude());
-	                dis.append("ang/"+angle);
-	                
-	                if(oldangle>angle*1.3)
-	                {
-	                   dis.append("좌회전");
-	                }else if(oldangle<angle*1.3)
-	                {
-	                   dis.append("우회전");
-	                }else
-	                {
-	                   dis.append("직진");
-	                }
-	               }catch( IndexOutOfBoundsException e){
-	               }
-	               dis.append("/ i "+Integer.toString(i));
-	               
-	                  state.append("END!!");
-	                  LogManager.printLog("END!!");
+		           boolean ok = false;
+		            super.handleMessage(msg);
+		            
+		            boolean goWest=false;// 동쪽으로
+		            TMapPoint po = (TMapPoint) msg.obj;
+		            double la = po.getLatitude();
+		            double lo = po.getLongitude();
+		            
+//		            double old_distance;
+		            double distance = 0 ; 
+		            double angle = 0 ; 
+		            double preangle = 0 ;
+		            
+		            TMapPoint frontpoint = RoutePoint.get(i);
+		            TMapPoint prepoint = RoutePoint.get(i-1);
 
-	               LogManager.printLog(String.valueOf(distance));
-	               
-	               state.setText("now "+po.getLongitude()+"/"+po.getLatitude());
-	               
-	               if(ok)
-	               {
-	                  state.append("YES!!");
-	                  LogManager.printLog("YES!!");
-	               }
-	           }
+		            double fla=frontpoint.getLatitude();
+		            double flo=frontpoint.getLongitude();
+		            
+		            double pla=prepoint.getLatitude();
+		            double plo=prepoint.getLongitude();
+		            
+		            double lowla ; 
+		            double higla;
+		            double lowlo;
+		            double higlo;
+		            
+		            //latitude 위도 위아래 
+		            //long 경도 좌우
+		            
+		            
+		            if(fla>pla){
+		            	lowla= pla;
+		            	higla=fla;
+		            }else
+		            {
+		            	lowla =fla;
+		            	higla=pla;
+		            }
+		            
+		            if(flo>plo){
+		            	lowlo=plo;
+		            	higlo= flo;
+		            }else
+		            {
+		            	lowlo=flo;
+		            	higlo =plo;
+		            }
+		            
+
+		            if((lowla < la)&&(higla > la)){
+			            if((lowlo < lo)&&(higlo > lo)){
+			            	LogManager.printLog("올바름");
+			            	state.setText("올바름");
+			            }else{
+			            	LogManager.printLog("la올바름");
+			            	state.setText("la올바름");
+			            }
+		            	
+		            }else{
+		            	LogManager.printLog("안올바름");
+		            	state.setText("안올바름");
+		            	i++;
+		            }
+		            
+		            LogManager.printLog("나 "+po.toString());
+		            LogManager.printLog("앞 "+frontpoint.toString());
+		            LogManager.printLog("뒤 "+prepoint.toString());
+		            
+
+		            if(plo<flo){
+		            	// 동쪽으로
+		            	dis.setText("동쪽으로 ");
+		            	preangle=(la-pla)/(lo-plo);
+		            	angle=(fla-la)/(flo-lo);
+		            	
+		            	if((1.5>preangle/angle)||(-1.5 <preangle/angle)){
+		            		dis.append(" / 직진 ");
+		            		LogManager.printLog("직진");
+			            	if(!isDevice){
+			            		
+				            	goStraight.setVisibility(View.VISIBLE);
+				            	turnLeft.setVisibility(View.GONE);
+				            	turnRight.setVisibility(View.GONE);
+			            	}else
+			            	{
+			            		LogManager.printLog("device go");
+			            		sendBluetoothMessage(goDevice);
+			            	}
+			            	i++;
+		            	}
+		            	else if(preangle>angle){
+			            	LogManager.printLog("좌회전");
+			            	dis.append(" / 좌회전 ");
+
+			            	if(!isDevice){
+			            	goStraight.setVisibility(View.GONE);
+			            	turnLeft.setVisibility(View.VISIBLE);
+			            	turnRight.setVisibility(View.GONE);
+			            	}else{
+			            		LogManager.printLog("devece left");
+			            		sendBluetoothMessage(leftDevice);
+			            			
+			            	}
+			            	i++;
+		            	}else
+		            	{
+
+			            	dis.append(" / 우회전 ");
+			            	
+			            	if(i%5!=0){
+			            		LogManager.printLog("우회전");
+
+			            		if(!isDevice){
+			            		
+			            			goStraight.setVisibility(View.GONE);
+			            			turnLeft.setVisibility(View.GONE);
+			            			turnRight.setVisibility(View.VISIBLE);
+			            		}else
+			            		{
+			            			LogManager.printLog("devece right");
+			            			sendBluetoothMessage(rightDevice);
+			            		}
+			            	}
+			            	i++;}
+		            		
+		            }else{
+		            	// 서쪽으로 
+		            	dis.setText("서쪽으로 ");
+		            	preangle=(fla-la)/(flo-lo);
+		            	angle=(la-pla)/(lo-plo);
+		            	
+		            	if((1.5>preangle/angle)||(-1.5<preangle/angle)){
+		            		dis.append(" / 직진 ");
+
+			            	
+			            	LogManager.printLog("직진");
+			            	if(!isDevice){
+			            		
+				            	goStraight.setVisibility(View.VISIBLE);
+				            	turnLeft.setVisibility(View.GONE);
+				            	turnRight.setVisibility(View.GONE);
+			            	}else
+			            	{
+			            		LogManager.printLog("device go");
+			            		sendBluetoothMessage(goDevice);
+			            	}
+			            	i++;
+		            	}
+		            	else if(preangle>angle){
+
+			            	dis.append(" / 우회전 ");
+			            	
+			            	if(i%5!=0){
+			            		LogManager.printLog("우회전");
+
+			            		if(!isDevice){
+			            		
+			            			goStraight.setVisibility(View.GONE);
+			            			turnLeft.setVisibility(View.GONE);
+			            			turnRight.setVisibility(View.VISIBLE);
+			            		}else
+			            		{
+			            			LogManager.printLog("devece right");
+			            			sendBluetoothMessage(rightDevice);
+			            		}
+			            	}
+			            	i++;
+		            	}else
+		            	{
+			            	LogManager.printLog("좌회전");
+			            	dis.append(" / 좌회전 ");
+
+			            	if(!isDevice){
+			            	goStraight.setVisibility(View.GONE);
+			            	turnLeft.setVisibility(View.VISIBLE);
+			            	turnRight.setVisibility(View.GONE);
+			            	}else{
+			            		LogManager.printLog("devece left");
+			            		sendBluetoothMessage(leftDevice);
+			            			
+			            	}
+			            	i++;
+			            	
+		            	}
+		            	
+		            }
+		            
+		            showMarkerPoint3(po);
+		            if(i>RoutePoint.size()-2)
+		            {
+		            	LogManager.printLog("도착");
+		            	if(!isDevice)
+		            	{
+		            		
+		            	goStraight.setVisibility(View.GONE);
+		            	turnLeft.setVisibility(View.GONE);
+		            	turnRight.setVisibility(View.GONE);
+		            	
+		            	}else
+		            	{
+		            		LogManager.printLog("arrive");
+		            		sendBluetoothMessage(arriveDevice);
+		            	}
+		            	cancelNavi();
+		            }
+		            
+		            prepo = po;
+		           }
 	       };
+	       
 	       double findLine(TMapPoint front, TMapPoint back, TMapPoint nowLocation)
 	       {
 	          double x1 = back.getLongitude();
@@ -628,6 +796,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	          double d = Math.abs(b-(ki)*a+x1*ki-y1)/(Math.sqrt((a*a) + (b*b)));
 	          return d;
 	       }
+	       
 	       class Navigation extends Thread{
 	    	      TMapPolyLine polyLine;
 	    	      TMapView mMapView ; 
@@ -660,8 +829,9 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	    	            point = randomTMapPoint();
 	    	            msg.obj = point;
 	    	            mMainHandler.sendMessage(msg);
-//	    	            mMapView.setCenterPoint(point.getLongitude(), point.getLatitude(), true);
-//	    	            mMapView.setLocationPoint(point.getLongitude(), point.getLatitude());
+	    	            // 지금 내 위치 
+	    	            mMapView.setCenterPoint(point.getLongitude(), point.getLatitude(), true);
+	    	            mMapView.setLocationPoint(point.getLongitude(), point.getLatitude());
 	    	            
 	    	            try {
 	    	               Thread.sleep(1000);
@@ -783,7 +953,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	
 	/**
 	 * mapZoomIn
-	 * 지도를 한단계 확대한다. 
+	 * �?���??�단�??��??�다. 
 	 */
 	public void mapZoomIn() {
 		mMapView.MapZoomIn();   
@@ -791,7 +961,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	
 	/**
 	 * mapZoomOut
-	 * 지도를 한단계 축소한다. 
+	 * �?���??�단�?축소?�다. 
 	 */
 	public void mapZoomOut() {
 		mMapView.MapZoomOut();
@@ -799,16 +969,16 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	
 	/**
 	 * getZoomLevel
-	 * 현재 줌의 레벨을 가지고 온다. 
+	 * ?�재 줌의 ?�벨??�??�??�다. 
 	 */
 	public void getZoomLevel() {
 		int nCurrentZoomLevel = mMapView.getZoomLevel();
-		Common.showAlertDialog(this, "", "현재 Zoom Level : " + Integer.toString(nCurrentZoomLevel));
+		Common.showAlertDialog(this, "", "?�재 Zoom Level : " + Integer.toString(nCurrentZoomLevel));
 	}
 	
 	/**
 	 * setZoomLevel
-	 * Zoom Level을 설정한다. 
+	 * Zoom Level???�정?�다. 
 	 */
 	public void setZoomLevel() {
     	final String[] arrString = getResources().getStringArray(R.array.a_zoomlevel);
@@ -827,7 +997,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
     
     /**
      * seetMapType  
-     * Map의 Type을 설정한다.
+     * Map??Type???�정?�다.
      */
 	public void setMapType() {
     	AlertDialog dlg = new AlertDialog.Builder(this)
@@ -845,7 +1015,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
     
     /**
      * getLocationPoint
-     * 현재위치로 표시될 좌표의 위도, 경도를 반환한다. 
+     * ?�재?�치�??�시??좌표???�도, 경도�?반환?�다. 
      */
 	public void getLocationPoint() {
 		TMapPoint point = mMapView.getLocationPoint();
@@ -865,7 +1035,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	
 	/**
 	 * setLocationPoint
-	 * 현재위치로 표시될 좌표의 위도,경도를 설정한다. 
+	 * ?�재?�치�??�시??좌표???�도,경도�??�정?�다. 
 	 */
 	public void setLocationPoint() {
 		LocationManager locationManager = (LocationManager) this.getSystemService(Context.LOCATION_SERVICE);
@@ -881,118 +1051,118 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		mMapView.setLocationPoint(latitude, longitude);
 	}
 	
-	/**
-	 * setMapIcon
-	 * 현재위치로 표시될 아이콘을 설정한다. 
-	 */
-	public void setMapIcon() {
-		m_bShowMapIcon = !m_bShowMapIcon;
-
-		if (m_bShowMapIcon) {
-			Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.ic_launcher);
-			mMapView.setIcon(bitmap);
-		}
-		mMapView.setIconVisibility(m_bShowMapIcon);
-	}
-	
+//	/**
+//	 * setMapIcon
+//	 * ?�재?�치�??�시???�이콘을 ?�정?�다. 
+//	 */
+//	public void setMapIcon() {
+//		m_bShowMapIcon = !m_bShowMapIcon;
+//
+//		if (m_bShowMapIcon) {
+//			Bitmap bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.ic_launcher);
+//			mMapView.setIcon(bitmap);
+//		}
+//		mMapView.setIconVisibility(m_bShowMapIcon);
+//	}
+//	
 	/**
 	 * setCompassMode
-	 * 단말의 방항에 따라 움직이는 나침반모드로 설정한다. 
+	 * ?�말??방항???�라 ??��?�는 ?�침반모?�로 ?�정?�다. 
 	 */
 	public void setCompassMode() {
 		mMapView.setCompassMode(!mMapView.getIsCompass());
 	}
+//	
+//	/**
+//	 * getIsCompass
+//	 * ?�침반모?�의 ?�용?��?�?반환?�다. 
+//	 */
+//	public void getIsCompass() {
+//		Boolean bGetIsCompass = mMapView.getIsCompass();
+//		Common.showAlertDialog(this, "", "?�재 ?�침�?모드??: " + bGetIsCompass.toString() );
+//	}
+//	
+//	/**
+//	 * setTrafficeInfo
+//	 * ?�시�?교통?�보�??�출?��?�??�정?�다. 
+//	 */
+//	public void setTrafficeInfo() {
+//		m_bTrafficeMode = !m_bTrafficeMode;
+//		mMapView.setTrafficInfo(m_bTrafficeMode);
+//	}
+//	
+//	/**
+//	 * getIsTrafficeInfo
+//	 * ?�시�?교통?�보 ?�출?�태�?반환?�다. 
+//	 */
+//	public void getIsTrafficeInfo() {
+//		Boolean bIsTrafficeInfo = mMapView.IsTrafficInfo();
+//		Common.showAlertDialog(this, "", "?�재 ?�시�?교통?�보 ?�출?�태?? : " + bIsTrafficeInfo.toString() );
+//	}
+//	
+//	/**
+//	 * setSightVisible
+//	 * ?�야?�출?��?�??�정?�다. 
+//	 */
+//	public void setSightVisible() {
+//		m_bSightVisible = !m_bSightVisible;
+//		mMapView.setSightVisible(m_bSightVisible);
+//	}
+//	
+//	/**
+//	 * setTrackingMode
+//	 * ?�면중심???�말???�재?�치�??�동?�켜주는 ?�래?�모?�로 ?�정?�다. 
+//	 */
+//	public void setTrackingMode() {
+//		m_bTrackingMode = !m_bTrackingMode;
+//		mMapView.setTrackingMode(m_bTrackingMode);
+//	}
+//	
+//	/**
+//	 * getIsTracking
+//	 * ?�래?�모?�의 ?�용?��?�?반환?�다. 
+//	 */
+//	public void getIsTracking() {
+//		Boolean bIsTracking = mMapView.getIsTracking();
+//		Common.showAlertDialog(this, "", "?�재 ?�래?�모???�용 ?��?  : " + bIsTracking.toString() );
+//	}
+//	
+//	/**
+//	 * addTMapCircle()
+//	 * �?��???�클??추�??�다. 
+//	 */
+//	public void addTMapCircle() {
+//		TMapCircle circle = new TMapCircle();
+//		
+//		circle.setRadius(300);
+//		circle.setLineColor(Color.BLUE);
+//		circle.setAreaAlpha(50);
+//		circle.setCircleWidth((float)10);
+//		circle.setRadiusVisible(true);
+//		
+//		TMapPoint point = randomTMapPoint();
+//		circle.setCenterPoint(point);
+//		
+//		String strID = String.format("circle%d", mCircleID++);
+//		mMapView.addTMapCircle(strID, circle);
+//		
+//		mArrayCircleID.add(strID);
+//	}
 	
-	/**
-	 * getIsCompass
-	 * 나침반모드의 사용여부를 반환한다. 
-	 */
-	public void getIsCompass() {
-		Boolean bGetIsCompass = mMapView.getIsCompass();
-		Common.showAlertDialog(this, "", "현재 나침반 모드는 : " + bGetIsCompass.toString() );
-	}
-	
-	/**
-	 * setTrafficeInfo
-	 * 실시간 교통정보를 표출여부를 설정한다. 
-	 */
-	public void setTrafficeInfo() {
-		m_bTrafficeMode = !m_bTrafficeMode;
-		mMapView.setTrafficInfo(m_bTrafficeMode);
-	}
-	
-	/**
-	 * getIsTrafficeInfo
-	 * 실시간 교통정보 표출상태를 반환한다. 
-	 */
-	public void getIsTrafficeInfo() {
-		Boolean bIsTrafficeInfo = mMapView.IsTrafficInfo();
-		Common.showAlertDialog(this, "", "현재 실시간 교통정보 표출상태는  : " + bIsTrafficeInfo.toString() );
-	}
-	
-	/**
-	 * setSightVisible
-	 * 시야표출여부를 설정한다. 
-	 */
-	public void setSightVisible() {
-		m_bSightVisible = !m_bSightVisible;
-		mMapView.setSightVisible(m_bSightVisible);
-	}
-	
-	/**
-	 * setTrackingMode
-	 * 화면중심을 단말의 현재위치로 이동시켜주는 트래킹모드로 설정한다. 
-	 */
-	public void setTrackingMode() {
-		m_bTrackingMode = !m_bTrackingMode;
-		mMapView.setTrackingMode(m_bTrackingMode);
-	}
-	
-	/**
-	 * getIsTracking
-	 * 트래킹모드의 사용여부를 반환한다. 
-	 */
-	public void getIsTracking() {
-		Boolean bIsTracking = mMapView.getIsTracking();
-		Common.showAlertDialog(this, "", "현재 트래킹모드 사용 여부  : " + bIsTracking.toString() );
-	}
-	
-	/**
-	 * addTMapCircle()
-	 * 지도에 서클을 추가한다. 
-	 */
-	public void addTMapCircle() {
-		TMapCircle circle = new TMapCircle();
-		
-		circle.setRadius(300);
-		circle.setLineColor(Color.BLUE);
-		circle.setAreaAlpha(50);
-		circle.setCircleWidth((float)10);
-		circle.setRadiusVisible(true);
-		
-		TMapPoint point = randomTMapPoint();
-		circle.setCenterPoint(point);
-		
-		String strID = String.format("circle%d", mCircleID++);
-		mMapView.addTMapCircle(strID, circle);
-		
-		mArrayCircleID.add(strID);
-	}
-	
-	/**
-	 * removeTMapCircle
-	 * 지도상의 해당 서클을 제거한다. 
-	 */
-	public void removeTMapCircle() {
-		if(mArrayCircleID.size() <= 0 )
-			return;
-		
-		String strCircleID = mArrayCircleID.get(mArrayCircleID.size() - 1 );
-		mMapView.removeTMapCircle(strCircleID);
-		
-		mArrayCircleID.remove(mArrayCircleID.size() - 1);
-		//mMapView.showCallOutViewWithMarkerItemID("02");
-	}
+//	/**
+//	 * removeTMapCircle
+//	 * �?��?�의 ?�당 ?�클???�거?�다. 
+//	 */
+//	public void removeTMapCircle() {
+//		if(mArrayCircleID.size() <= 0 )
+//			return;
+//		
+//		String strCircleID = mArrayCircleID.get(mArrayCircleID.size() - 1 );
+//		mMapView.removeTMapCircle(strCircleID);
+//		
+//		mArrayCircleID.remove(mArrayCircleID.size() - 1);
+//		//mMapView.showCallOutViewWithMarkerItemID("02");
+//	}
 	
 	public void showMarkerPoint2() {
 		ArrayList<Bitmap> list = null;
@@ -1044,238 +1214,196 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	      item1.setVisible(item1.VISIBLE);
 	   
 	      item1.setIcon(bitmap);
-	      LogManager.printLog("bitmap " + bitmap.getWidth() + " " + bitmap.getHeight());
+//	      LogManager.printLog("bitmap " + bitmap.getWidth() + " " + bitmap.getHeight());
 	      
 	      bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.i_location);      
-	      item1.setCalloutTitle("현재위치");
-	      item1.setCanShowCallout(true);
-	      item1.setAutoCalloutVisible(true);
 	      
 	      Bitmap bitmap_i = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.i_go);
-	      mMapView.addMarkerItem(" ", item1);
+	      mMapView.addMarkerItem("now", item1);
 	      
-	      item1.setCalloutRightButtonImage(bitmap_i);}
+	      item1.setCalloutRightButtonImage(bitmap_i);
+	      }
 	/**
 	 * showMarkerPoint
-	 * 지도에 마커를 표출한다. 
+	 * �?��??마커�??�출?�다. 
 	 */
 	public void showMarkerPoint(TMapPoint point, String title, String subtitle)
 
 	{	
 
-
-
-
 		Bitmap bitmap = null;
-
-		
-
 		//TMapPoint point = new TMapPoint(37.566474, 126.985022);
-
-				
-
 		TMapMarkerItem item1 = new TMapMarkerItem();
-
-		
-
 		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.map_pin_red);
 
-				
-
 		item1.setTMapPoint(point);
-
-		item1.setName("SKT타워");
-
-		item1.setVisible(item1.VISIBLE);
-
-	
 
 		item1.setIcon(bitmap);
 
 		LogManager.printLog("bitmap " + bitmap.getWidth() + " " + bitmap.getHeight());
 
-		
-
 		bitmap = BitmapFactory.decodeResource(mContext.getResources(),R.drawable.i_location);		
 
 		item1.setCalloutTitle(title);
-
-		item1.setCalloutSubTitle(subtitle);
-
 		item1.setCanShowCallout(true);
-
 		item1.setAutoCalloutVisible(true);
-
-		
 
 		Bitmap bitmap_i = BitmapFactory.decodeResource(mContext.getResources(), R.drawable.i_go);
 
-		
 
-		
-
-		mMapView.addMarkerItem(" ", item1);
-
-		
+		mMapView.addMarkerItem("mok", item1);
 
 		//item1.setCalloutLeftImage(bitmap);
-
 		item1.setCalloutRightButtonImage(bitmap_i);
 
-
-
-
-
-
-
 	}
 	
-		
-	
-	public void removeMarker()
-	{
-		if(mArrayMarkerID.size() <= 0 )
-			return;
-		
-		String strMarkerID = mArrayMarkerID.get(mArrayMarkerID.size() - 1);
-		mMapView.removeMarkerItem(strMarkerID);
-		
-		mArrayMarkerID.remove(mArrayMarkerID.size() - 1);
-		
-	}
-	
-	
-	/**
-	 * moveFrontMarker
-	 * 마커를 맨 앞으로 표시 하도록 한다. 
-	 * showMarkerPoint() 함수를 먼저 클릭을 한 후, 클릭을 해야 함.
-	 */
-	public void moveFrontMarker()
-	{
-		TMapMarkerItem item = mMapView.getMarkerItemFromID("1");
-		
-		mMapView.bringMarkerToFront(item);
-	}
-	
-	
-	/**
-	 * moveBackMarker
-	 * 마커를 맨 뒤에 표시하도록 한다. 
-	 * showMarkerPoint() 함수를 먼저 클릭을 한 후, 클릭을 해야 함.
-	 */
-	public void moveBackMarker()
-	{
-		TMapMarkerItem item = mMapView.getMarkerItemFromID("1");
-		
-		mMapView.sendMarkerToBack(item);
-	}
-	
-	
-	/**
-	 * drawLine
-	 * 지도에 라인을 추가한다. 
-	 */
-	public void drawLine()
-	{	
-		TMapPolyLine polyLine = new TMapPolyLine();
-		polyLine.setLineColor(Color.BLUE);
-		polyLine.setLineWidth(5);
-		
-		for(int i = 0; i < 5; i++)
-		{
-			TMapPoint point = randomTMapPoint();
-			polyLine.addLinePoint(point);
-		}
-		
-		String strID = String.format("line%d", mLineID++);
-		
-		mMapView.addTMapPolyLine(strID, polyLine);
-		
-		mArrayLineID.add(strID);
-		
-	}
+//		
+//	
+//	public void removeMarker()
+//	{
+//		if(mArrayMarkerID.size() <= 0 )
+//			return;
+//		
+//		String strMarkerID = mArrayMarkerID.get(mArrayMarkerID.size() - 1);
+//		mMapView.removeMarkerItem(strMarkerID);
+//		
+//		mArrayMarkerID.remove(mArrayMarkerID.size() - 1);
+//		
+//	}
+//	
+//	
+//	/**
+//	 * moveFrontMarker
+//	 * 마커�?�??�으�??�시 ?�도�??�다. 
+//	 * showMarkerPoint() ?�수�?먼�? ?�릭?????? ?�릭???�야 ??
+//	 */
+//	public void moveFrontMarker()
+//	{
+//		TMapMarkerItem item = mMapView.getMarkerItemFromID("1");
+//		
+//		mMapView.bringMarkerToFront(item);
+//	}
+//	
+//	
+//	/**
+//	 * moveBackMarker
+//	 * 마커�?�??�에 ?�시?�도�??�다. 
+//	 * showMarkerPoint() ?�수�?먼�? ?�릭?????? ?�릭???�야 ??
+//	 */
+//	public void moveBackMarker()
+//	{
+//		TMapMarkerItem item = mMapView.getMarkerItemFromID("1");
+//		
+//		mMapView.sendMarkerToBack(item);
+//	}
 	
 	
-	/**
-	 * erasePolyLine
-	 * 지도에 라인을 제거한다. 
-	 */
-	public void erasePolyLine()
-	{
-		if(mArrayLineID.size() <= 0)
-			return;
-		
-		String strLineID = mArrayLineID.get(mArrayLineID.size() - 1 );
-		mMapView.removeTMapPolyLine(strLineID);
-		
-		mArrayLineID.remove(mArrayLineID.size() - 1);
-		
-	}
+//	/**
+//	 * drawLine
+//	 * �?��???�인??추�??�다. 
+//	 */
+//	public void drawLine()
+//	{	
+//		TMapPolyLine polyLine = new TMapPolyLine();
+//		polyLine.setLineColor(Color.BLUE);
+//		polyLine.setLineWidth(5);
+//		
+//		for(int i = 0; i < 5; i++)
+//		{
+//			TMapPoint point = randomTMapPoint();
+//			polyLine.addLinePoint(point);
+//		}
+//		
+//		String strID = String.format("line%d", mLineID++);
+//		
+//		mMapView.addTMapPolyLine(strID, polyLine);
+//		
+//		mArrayLineID.add(strID);
+//		
+//	}
+	
+	
+//	/**
+//	 * erasePolyLine
+//	 * �?��???�인???�거?�다. 
+//	 */
+//	public void erasePolyLine()
+//	{
+//		if(mArrayLineID.size() <= 0)
+//			return;
+//		
+//		String strLineID = mArrayLineID.get(mArrayLineID.size() - 1 );
+//		mMapView.removeTMapPolyLine(strLineID);
+//		
+//		mArrayLineID.remove(mArrayLineID.size() - 1);
+//		
+//	}
 
 	
-	
-	/**
-	 * drawPolygon
-	 * 지도에 폴리곤에 그린다. 
-	 */
-	public void drawPolygon()
-	{			
-		int Min = 3;
-		int Max = 10;
-		int rndNum = (int)(Math.random() * ( Max - Min ));
-		
-		LogManager.printLog("drawPolygon" + rndNum);
-		
-		TMapPolygon polygon = new TMapPolygon();
-		polygon.setLineColor(Color.BLUE);
-		polygon.setPolygonWidth((float)4);
-		polygon.setAreaAlpha(2);
-		    
-		TMapPoint point = null;
-		
-		if(rndNum < 3 )
-		{
-			rndNum = rndNum + (3 - rndNum);
-		}
-		
-		for(int i = 0; i < rndNum; i++)
-		{
-			point = randomTMapPoint(); 
-			polygon.addPolygonPoint(point);
-			
-		}
-				
-		String strID = String.format("polygon%d", mPolygonID++);
-		mMapView.addTMapPolygon(strID, polygon);
-		
-		mArrayPolygonID.add(strID);
-		
-	}
-	
-	/**
-	 * erasePolygon
-	 * 지도에 그려진 폴리곤을 제거한다. 
-	 */
-	public void erasePolygon()
-	{	
-		if(mArrayPolygonID.size() <= 0)
-			return;
-		
-		String strPolygonID = mArrayPolygonID.get(mArrayPolygonID.size() - 1 );
-		
-		LogManager.printLog("erasePolygon " + strPolygonID);
-		
-		mMapView.removeTMapPolygon(strPolygonID);
-		
-		mArrayPolygonID.remove(mArrayPolygonID.size() - 1);
-		
-	}
-	
+//	
+//	/**
+//	 * drawPolygon
+//	 * �?��???�리곤에 그린?? 
+//	 */
+//	public void drawPolygon()
+//	{			
+//		int Min = 3;
+//		int Max = 10;
+//		int rndNum = (int)(Math.random() * ( Max - Min ));
+//		
+//		LogManager.printLog("drawPolygon" + rndNum);
+//		
+//		TMapPolygon polygon = new TMapPolygon();
+//		polygon.setLineColor(Color.BLUE);
+//		polygon.setPolygonWidth((float)4);
+//		polygon.setAreaAlpha(2);
+//		    
+//		TMapPoint point = null;
+//		
+//		if(rndNum < 3 )
+//		{
+//			rndNum = rndNum + (3 - rndNum);
+//		}
+//		
+//		for(int i = 0; i < rndNum; i++)
+//		{
+//			point = randomTMapPoint(); 
+//			polygon.addPolygonPoint(point);
+//			
+//		}
+//				
+//		String strID = String.format("polygon%d", mPolygonID++);
+//		mMapView.addTMapPolygon(strID, polygon);
+//		
+//		mArrayPolygonID.add(strID);
+//		
+//	}
+//	
+//	/**
+//	 * erasePolygon
+//	 * �?��??그려�??�리곤을 ?�거?�다. 
+//	 */
+//	public void erasePolygon()
+//	{	
+//		if(mArrayPolygonID.size() <= 0)
+//			return;
+//		
+//		String strPolygonID = mArrayPolygonID.get(mArrayPolygonID.size() - 1 );
+//		
+//		LogManager.printLog("erasePolygon " + strPolygonID);
+//		
+//		mMapView.removeTMapPolygon(strPolygonID);
+//		
+//		mArrayPolygonID.remove(mArrayPolygonID.size() - 1);
+//		
+//	}
+//	
 	
 	
 	/**
 	 * drawMapPath
-	 * 지도에 시작-종료 점에 대해서 경로를 표시한다. 
+	 * �?��???�작-종료 ?�에 ??��??경로�??�시?�다. 
 	 */
 	public void drawMapPath()
 	{			
@@ -1311,7 +1439,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	
 	/**
 	 * displayMapInfo()
-	 * POI들이 모두 표시될 수 있는 줌레벨 결정함수와 중심점리턴하는 함수
+	 * POI?�이 모두 ?�시?????�는 줌레�?결정?�수??중심?�리?�하???�수
 	 */
 	public void displayMapInfo()
 	{	
@@ -1344,111 +1472,111 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		
 		
 	}
+//	
+//	
+//	/**
+//	 * removeMapPath
+//	 * 경로 ?�시�???��?�다. 
+//	 */
+//	public void removeMapPath()
+//	{	
+//		mMapView.removeTMapPath();
+//		
+//	}
+	
+//	
+//	
+//	/**
+//	 * naviGuide
+//	 * 길안??
+//	 */
+//	public void naviGuide()
+//	{			
+//		TMapPoint point1 = mMapView.getCenterPoint();
+//		TMapPoint point2 = randomTMapPoint();
+//		
+//		TMapData tmapdata = new TMapData();
+//		
+//		tmapdata.findPathDataAll(point1, point2, new FindPathDataAllListenerCallback() {
+//			
+//			@Override
+//			public void onFindPathDataAll(Document doc) {
+//				
+//			
+//			}
+//		});
+//		
+//		
+//	}
+//	
+//	
+//	public void drawCarPath()
+//	{	
+//		
+//		TMapPoint point1 = mMapView.getCenterPoint();
+//		TMapPoint point2 = randomTMapPoint();
+//		
+//		TMapData tmapdata = new TMapData();
+//		
+//		tmapdata.findPathDataWithType(TMapPathType.CAR_PATH, point1, point2, new FindPathDataListenerCallback() {
+//			
+//			@Override
+//			public void onFindPathData(TMapPolyLine polyLine) {
+//				
+//				mMapView.addTMapPath(polyLine);
+//				
+//			}
+//		});
+//		
+//				
+//	}
 	
 	
-	/**
-	 * removeMapPath
-	 * 경로 표시를 삭제한다. 
-	 */
-	public void removeMapPath()
-	{	
-		mMapView.removeTMapPath();
-		
-	}
+//	
+//	public void  drawPedestrianPath()
+//	{				
+//		TMapPoint point1 = mMapView.getCenterPoint();
+//		TMapPoint point2 = randomTMapPoint();
+//		
+//		TMapData tmapdata = new TMapData();
+//		
+//		tmapdata.findPathDataWithType(TMapPathType.PEDESTRIAN_PATH, point1, point2, new FindPathDataListenerCallback() {
+//			
+//			@Override
+//			public void onFindPathData(TMapPolyLine polyLine) {
+//				
+//				polyLine.setLineColor(Color.BLUE);
+//				mMapView.addTMapPath(polyLine);
+//				
+//			}
+//		});
+//		
+//		
+//	}
 	
-	
-	
-	/**
-	 * naviGuide
-	 * 길안내 
-	 */
-	public void naviGuide()
-	{			
-		TMapPoint point1 = mMapView.getCenterPoint();
-		TMapPoint point2 = randomTMapPoint();
-		
-		TMapData tmapdata = new TMapData();
-		
-		tmapdata.findPathDataAll(point1, point2, new FindPathDataAllListenerCallback() {
-			
-			@Override
-			public void onFindPathDataAll(Document doc) {
-				
-			
-			}
-		});
-		
-		
-	}
-	
-	
-	public void drawCarPath()
-	{	
-		
-		TMapPoint point1 = mMapView.getCenterPoint();
-		TMapPoint point2 = randomTMapPoint();
-		
-		TMapData tmapdata = new TMapData();
-		
-		tmapdata.findPathDataWithType(TMapPathType.CAR_PATH, point1, point2, new FindPathDataListenerCallback() {
-			
-			@Override
-			public void onFindPathData(TMapPolyLine polyLine) {
-				
-				mMapView.addTMapPath(polyLine);
-				
-			}
-		});
-		
-				
-	}
-	
-	
-	
-	public void  drawPedestrianPath()
-	{				
-		TMapPoint point1 = mMapView.getCenterPoint();
-		TMapPoint point2 = randomTMapPoint();
-		
-		TMapData tmapdata = new TMapData();
-		
-		tmapdata.findPathDataWithType(TMapPathType.PEDESTRIAN_PATH, point1, point2, new FindPathDataListenerCallback() {
-			
-			@Override
-			public void onFindPathData(TMapPolyLine polyLine) {
-				
-				polyLine.setLineColor(Color.BLUE);
-				mMapView.addTMapPath(polyLine);
-				
-			}
-		});
-		
-		
-	}
-	
-	
-	
-	public void drawBicyclePath()
-	{		
-		TMapPoint point1 = mMapView.getCenterPoint();
-		TMapPoint point2 = randomTMapPoint();
-		
-		TMapData tmapdata = new TMapData();
-		
-		
-		tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, point1, point2, new FindPathDataListenerCallback() {
-			
-			@Override
-			public void onFindPathData(TMapPolyLine polyLine) {
-				
-				mMapView.addTMapPath(polyLine);
-				
-			}
-		});
-		
-		
-	}
-	
+//	
+//	
+//	public void drawBicyclePath()
+//	{		
+//		TMapPoint point1 = mMapView.getCenterPoint();
+//		TMapPoint point2 = randomTMapPoint();
+//		
+//		TMapData tmapdata = new TMapData();
+//		
+//		
+//		tmapdata.findPathDataWithType(TMapPathType.BICYCLE_PATH, point1, point2, new FindPathDataListenerCallback() {
+//			
+//			@Override
+//			public void onFindPathData(TMapPolyLine polyLine) {
+//				
+//				mMapView.addTMapPath(polyLine);
+//				
+//			}
+//		});
+//		
+//		
+//	}
+//	
 	
 	
 	
@@ -1457,30 +1585,30 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	
 	/**
 	 * getCenterPoint
-	 * 지도의 중심점을 가지고 온다. 
+	 * �?��??중심?�을 �??�??�다. 
 	 */
 	public void getCenterPoint()
 	{
 		TMapPoint point = mMapView.getCenterPoint();
 		
-		Common.showAlertDialog(this, "", "지도의 중심 좌표는 " + point.getLatitude() + " " + point.getLongitude() );
+		Common.showAlertDialog(this, "", "중심 좌표" + point.getLatitude() + " " + point.getLongitude() );
 		
 	}
 	
 	
 	/**
 	 * findAllPoi
-	 * 통합검색 POI를 요청한다. 
+	 * ?�합�?�� POI�??�청?�다. 
 	 */
 	public void findAllPoi()
 	{		
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("POI 통합 검색");
+		builder.setTitle("Gillian");
 		final EditText input = new EditText(this);
 		builder.setView(input);
-
-		builder.setPositiveButton("확인", new DialogInterface.OnClickListener() { 
+		builder.setMessage("검색할 위치를 입력하세요 ^_<");
+		builder.setPositiveButton("검색", new DialogInterface.OnClickListener() { 
 		    @Override
 		    public void onClick(DialogInterface dialog, int which) {
 		    			    		    	
@@ -1599,7 +1727,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 	
 	/**
 	 * convertToAddress
-	 * 지도에서 선택한 지점을 주소를 변경요청한다. 
+	 * �?��?�서 ?�택??�?��??주소�?�?��?�청?�다. 
 	 */
 	public void convertToAddress()
 	{			
@@ -1614,328 +1742,17 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 				@Override
 				public void onConvertToGPSToAddress(String strAddress) {
 					
-					LogManager.printLog("선택한 위치의 주소는 " + strAddress);
+					LogManager.printLog("주소" + strAddress);
 				}
 			});
-//		    tmapdata.reverseGeocoding(point.getLatitude(), point.getLongitude(), "A03", new reverseGeocodingListenerCallback() {
-//				
-//				@Override
-//				public void onReverseGeocoding(TMapAddressInfo addressInfo) {
-//					
-//					LogManager.printLog("선택한 위치의 주소는 " + addressInfo.strFullAddress);
-//				}
-//			});
-//		    tmapdata.geoCodingWithAddressType("F02", "서울시", "구로구", "새말로", "6", "", new GeoCodingWithAddressTypeListenerCallback() {
-//		    	
-//				@Override
-//				public void onGeoCodingWithAddressType(TMapGeocodingInfo geocodingInfo) {
-//					LogManager.printLog(">>> strMatchFlag : " + geocodingInfo.strMatchFlag);
-//					LogManager.printLog(">>> strLatitude : " + geocodingInfo.strLatitude);
-//					LogManager.printLog(">>> strLongitude : " + geocodingInfo.strLongitude);
-//					LogManager.printLog(">>> strCity_do : " + geocodingInfo.strCity_do);
-//					LogManager.printLog(">>> strGu_gun : " + geocodingInfo.strGu_gun);
-//					LogManager.printLog(">>> strLegalDong : " + geocodingInfo.strLegalDong);
-//					LogManager.printLog(">>> strAdminDong : " + geocodingInfo.strAdminDong);
-//					LogManager.printLog(">>> strBunji : " + geocodingInfo.strBunji);
-//					LogManager.printLog(">>> strNewMatchFlag : " + geocodingInfo.strNewMatchFlag);
-//					LogManager.printLog(">>> strNewLatitude : " + geocodingInfo.strNewLatitude);
-//					LogManager.printLog(">>> strNewLongitude : " + geocodingInfo.strNewLongitude);
-//					LogManager.printLog(">>> strNewRoadName : " + geocodingInfo.strNewRoadName);
-//					LogManager.printLog(">>> strNewBuildingIndex : " + geocodingInfo.strNewBuildingIndex);
-//					LogManager.printLog(">>> strNewBuildingName : " + geocodingInfo.strNewBuildingName);
-//				}
-//			});
 	    }
 		  
 	}    
 	    
 	
-	/**
-	 * getBizCategory
-	 * 업종별 category를 요청한다. 
-	 */
-	public void getBizCategory()
-	{		
-		TMapData tmapdata = new TMapData();
-		
-        tmapdata.getBizCategory(new BizCategoryListenerCallback() {
-			
-			@Override
-			public void onGetBizCategory(ArrayList<BizCategory> poiItem) {
-				
-				for(int i = 0; i < poiItem.size(); i++)
-		        {
-		        	BizCategory item = poiItem.get(i);
-		        	
-		        	LogManager.printLog("UpperBizCode " + item.upperBizCode + " " + "UpperBizName " + item.upperBizName );
-		        	LogManager.printLog("MiddleBizcode " + item.middleBizCode + " " + "MiddleBizName " + item.middleBizName);
-		        }
-			}
-		});
-            
-	}
-	
-	
-	
-	/**
-	 * getAroundBizPoi
-	 * 업종별 주변검색 POI 데이터를 요청한다. 
-	 */
-	public void getAroundBizPoi()
-	{				
-		TMapData tmapdata = new TMapData();
-		 
-		TMapPoint point = mMapView.getCenterPoint();
-		
-		
-		/*
-		tmapdata.findAroundBizPOI(point, "01", "편의점", new FindAroundBizPOIListenerCallback() {
-			
-			@Override
-			public void onFindAroundBizPOI(ArrayList<TMapPOIItem> poiItem) {
-				
-				for(int i = 0; i < poiItem.size(); i++)
-	            {
-	            	TMapPOIItem item = poiItem.get(i);
-	            	
-	            	LogManager.printLog("POI Name: " + item.getPOIName() + "," + 
-	            						"Address: " + item.getPOIAddress().replace("null", ""));
-	            
-	            }
-				
-			}
-		});
-		*/		
-		
-		
-		
-		tmapdata.findAroundNamePOI(point, "편의점;은행",1, 99, new FindAroundNamePOIListenerCallback() {
-			
-			@Override
-			public void onFindAroundNamePOI(ArrayList<TMapPOIItem> poiItem) {
-				
-				for(int i = 0; i < poiItem.size(); i++)
-	            {
-					TMapPOIItem item = poiItem.get(i);
-	            	
-	            	LogManager.printLog("POI Name: " + item.getPOIName() + "," + 
-	            						"Address: " + item.getPOIAddress().replace("null", ""));
-	            }
-				
-			}
-		});
-		
-		
-		
-	}
-	
-	
-	public void setTileType() {
-    	AlertDialog dlg = new AlertDialog.Builder(this)
-		.setIcon(R.drawable.ic_launcher)
-		.setTitle("Select MAP Tile Type")
-		.setSingleChoiceItems(R.array.a_tiletype, -1, new DialogInterface.OnClickListener() {						
-			@Override
-			public void onClick(DialogInterface dialog, int item) {							
-				LogManager.printLog("Set Map Tile Type " + item);
-				dialog.dismiss();
-				mMapView.setTileType(item);
-			}
-		}).show();	
-	}
-	
-	public void setBicycle()
-	{
-		mMapView.setBicycleInfo(!mMapView.IsBicycleInfo());
-	}	
-	
-	public void setBicycleFacility()
-	{
-		mMapView.setBicycleFacilityInfo(!mMapView.isBicycleFacilityInfo());
-	}
-	
-	
-	public void invokeRoute()
-	{	
-
-		final TMapPoint point = mMapView.getCenterPoint();
-		TMapData tmapdata = new TMapData();
-				
-		if(mMapView.isValidTMapPoint(point)) {
-			
-			tmapdata.convertGpsToAddress(point.getLatitude(), point.getLongitude(), new ConvertGPSToAddressListenerCallback() {
-				
-				@Override
-				public void onConvertToGPSToAddress(String strAddress) {
-					
-					TMapTapi tmaptapi = new TMapTapi(MainActivity.this);
-									
-					float fY = (float)point.getLatitude();
-					float fX = (float)point.getLongitude();
-					
-					tmaptapi.invokeRoute(strAddress, fX, fY);
-					
-				}
-			});
-		}
-	
-	}
-	
-	
-	public void invokeSetLocation()
-	{				
-		final TMapPoint point = mMapView.getCenterPoint();
-		TMapData tmapdata = new TMapData();
-		
-		
-		tmapdata.convertGpsToAddress(point.getLatitude(), point.getLongitude(), new ConvertGPSToAddressListenerCallback() {
-			
-			@Override
-			public void onConvertToGPSToAddress(String strAddress) {
-				
-				TMapTapi tmaptapi = new TMapTapi(MainActivity.this);
-				
-				float fY = (float)point.getLatitude();
-				float fX = (float)point.getLongitude();
-				
-				tmaptapi.invokeSetLocation(strAddress, fX, fY);
-				
-			}
-		});
-		
-		
-	}
-	
-	
-	
-	String strSearch = "";
-	
-	public void invokeSearchProtal()
-	{
-		AlertDialog.Builder builder = new AlertDialog.Builder(this);
-		builder.setTitle("T MAP 통합 검색");
-
-		final EditText input = new EditText(this);
-		builder.setView(input);
-
-		builder.setPositiveButton("확인", new DialogInterface.OnClickListener() { 
-		    @Override
-		    public void onClick(DialogInterface dialog, int which) {
-		        
-		    	strSearch = input.getText().toString();
-		        		    	
-		    	new Thread()
-				{
-					@Override
-					public void run()
-					{	
-						TMapTapi tmaptapi = new TMapTapi(MainActivity.this);
-												
-						if(strSearch.trim().length() > 0)
-							tmaptapi.invokeSearchPortal(strSearch);						
-					}
-					
-				}.start();
-		        
-		    }
-		});
-		builder.setNegativeButton("취소", new DialogInterface.OnClickListener() {
-		    @Override
-		    public void onClick(DialogInterface dialog, int which) {
-		        dialog.cancel();
-		    }
-		});
-
-		builder.show();
-		
-	}
-	
-	
-	public void tmapInstall()
-	{
-    	new Thread()
-		{
-			@Override
-			public void run()
-			{	
-				TMapTapi tmaptapi = new TMapTapi(MainActivity.this);
-		        Uri uri = Uri.parse(tmaptapi.getTMapDownUrl().get(0));
-		        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-		        startActivity(intent);					
-			}
-			
-		}.start();
-
-	}
-
-	
-	public void captureImage()
-	{	
-		/*
-		Bitmap bitmap = mMapView.getCaptureImage();
-		
-		String sdcard = Environment.getExternalStorageDirectory().getAbsolutePath();
-		 
-		File path = new File(sdcard + File.separator + "image_write");
-	    if (!path.exists()) 
-		   path.mkdir();
-	    
-	    File fileCacheItem = new File(path.toString() + File.separator + System.currentTimeMillis() + ".png");
-        OutputStream out = null;
-        
-        
-        try
-        {
-            fileCacheItem.createNewFile();
-            out = new FileOutputStream(fileCacheItem);
- 
-            bitmap.compress(CompressFormat.JPEG, 90, out);
-            
-            out.flush();
-            out.close();  
-        }catch (Exception e) {
-            e.printStackTrace();
-        }
-        */
-		
-		
-		mMapView.getCaptureImage(20, new MapCaptureImageListenerCallback() {
-			
-			@Override
-			public void onMapCaptureImage(Bitmap bitmap) {
-				
-				String sdcard = Environment.getExternalStorageDirectory().getAbsolutePath();
-				 
-				File path = new File(sdcard + File.separator + "image_write");
-			    if (!path.exists()) 
-				   path.mkdir();
-			    
-			    File fileCacheItem = new File(path.toString() + File.separator + System.currentTimeMillis() + ".png");
-		        OutputStream out = null;
-		        
-		        try
-		        {
-		            fileCacheItem.createNewFile();
-		            out = new FileOutputStream(fileCacheItem);
-		 
-		            bitmap.compress(CompressFormat.JPEG, 90, out);
-		            
-		            out.flush();
-		            out.close();  
-		        }
-		        catch (Exception e) 
-		        {
-		            e.printStackTrace();
-		        }
-				
-			}
-		});
-        
-        
-	}
-	
-	
 	private boolean bZoomEnable = false;
+
+
 	
 	public void disableZoom()
 	{
@@ -1956,7 +1773,7 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		pathInfo.put("rStlat", Double.toString(37.566474));
 		pathInfo.put("rStlon", Double.toString(126.985022));
 		
-		pathInfo.put("rGoName", "신도림");
+		pathInfo.put("rGoName", "?�착");
 		pathInfo.put("rGolat", "37.50861147");
 		pathInfo.put("rGolon", "126.8911457");
 		
@@ -1967,6 +1784,201 @@ LocationManager locationManager = (LocationManager) this.getSystemService(Contex
 		tmapdata.findTimeMachineCarPath(pathInfo,  currentTime, null);	
 		
 	}
+    public void blueCreate() {
+//      super.onCreate(savedInstanceState);
+      if(D) Log.e(TAG, "+++ Blue CREATE +++");
 
+      // Set up the window layout
+//      setContentView(R.layout.main);
+
+      // Get local Bluetooth adapter
+      mBluetoothAdapter = BluetoothAdapter.getDefaultAdapter();
+
+      // If the adapter is null, then Bluetooth is not supported
+      if (mBluetoothAdapter == null) {
+          Toast.makeText(this, "Bluetooth is not available", Toast.LENGTH_LONG).show();
+//          finish();
+          return;
+      }
+    }
+      public void blueStart() {
+//        super.onStart();
+        if(D) Log.e(TAG, "++ blue START ++");
+
+        // If BT is not on, request that it be enabled.
+        // setupChat() will then be called during onActivityResult
+        if (!mBluetoothAdapter.isEnabled()) {
+            Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+            startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+        // Otherwise, setup the chat session
+        } else {
+            if (mChatService == null) {
+            	setupBluetoothChat();
+            }
+        }
+    }
+      public  void blueResume() {
+//        super.onResume();
+        if(D) Log.e(TAG, "+ blue RESUME +");
+
+        // Performing this check in onResume() covers the case in which BT was
+        // not enabled during onStart(), so we were paused to enable it...
+        // onResume() will be called when ACTION_REQUEST_ENABLE activity returns.
+        if (mChatService != null) {
+            // Only if the state is STATE_NONE, do we know that we haven't started already
+            if (mChatService.getState() == BluetoothChatService.STATE_NONE) {
+              // Start the Bluetooth chat services
+              mChatService.start();
+            }
+        }
+    }
+      
+      private void ensureDiscoverable() {
+          if(D) Log.d(TAG, "ensure discoverable");
+          if (mBluetoothAdapter.getScanMode() !=
+              BluetoothAdapter.SCAN_MODE_CONNECTABLE_DISCOVERABLE) {
+              Intent discoverableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_DISCOVERABLE);
+              discoverableIntent.putExtra(BluetoothAdapter.EXTRA_DISCOVERABLE_DURATION, 300);
+              startActivity(discoverableIntent);
+          }
+      }
+      
+      /**
+       * Sends a message.
+       * @param message  A string of text to send.
+       */
+      private void sendBluetoothMessage(String message) {
+          // Check that we're actually connected before trying anything
+          if (mChatService.getState() != BluetoothChatService.STATE_CONNECTED) {
+              Toast.makeText(this, R.string.not_connected, Toast.LENGTH_SHORT).show();
+              return;
+          }
+
+          // Check that there's actually something to send
+          if (message.length() > 0) {
+              // Get the message bytes and tell the BluetoothChatService to write
+              byte[] send = message.getBytes();
+              mChatService.write(send);
+
+              // Reset out string buffer to zero and clear the edit text field
+              mOutStringBuffer.setLength(0);
+//              mOutEditText.setText(mOutStringBuffer);
+          }
+      }
+      
+      private final Handler mHandler = new Handler() {
+          @Override
+          public void handleMessage(Message msg) {
+              switch (msg.what) {
+              case MESSAGE_STATE_CHANGE:
+                  if(D) Log.i(TAG, "MESSAGE_STATE_CHANGE: " + msg.arg1);
+                  switch (msg.arg1) {
+                  case BluetoothChatService.STATE_CONNECTED:
+                      LogManager.printLog(R.string.title_connected_to+" / "+mConnectedDeviceName);
+//                      mConversationArrayAdapter.clear();
+                      break;
+                  case BluetoothChatService.STATE_CONNECTING:
+                	  LogManager.printLog(R.string.title_connecting+" / ");
+                      break;
+                  case BluetoothChatService.STATE_LISTEN:
+                  case BluetoothChatService.STATE_NONE:
+                	  LogManager.printLog(R.string.title_not_connected+" / ");
+                      break;
+                  }
+                  break;
+              case MESSAGE_WRITE:
+                  byte[] writeBuf = (byte[]) msg.obj;
+                  // construct a string from the buffer
+                  String writeMessage = new String(writeBuf);
+                  LogManager.printLog("Me:  " + writeMessage);
+                  
+                  break;
+              case MESSAGE_READ:
+                  byte[] readBuf = (byte[]) msg.obj;
+                  // construct a string from the valid bytes in the buffer
+                  String readMessage = new String(readBuf, 0, msg.arg1);
+                  LogManager.printLog(mConnectedDeviceName+":  " + readMessage);
+                  break;
+              case MESSAGE_DEVICE_NAME:
+                  // save the connected device's name
+                  mConnectedDeviceName = msg.getData().getString(DEVICE_NAME);
+                  Toast.makeText(getApplicationContext(), "Connected to "
+                                 + mConnectedDeviceName, Toast.LENGTH_SHORT).show();
+                  break;
+              case MESSAGE_TOAST:
+                  Toast.makeText(getApplicationContext(), msg.getData().getString(TOAST),
+                                 Toast.LENGTH_SHORT).show();
+                  break;
+              }
+          }
+      };
+
+      public void onActivityResult(int requestCode, int resultCode, Intent data) {
+          if(D) Log.d(TAG, "onActivityResult " + resultCode);
+          switch (requestCode) {
+          case REQUEST_CONNECT_DEVICE_SECURE:
+              // When DeviceListActivity returns with a device to connect
+              if (resultCode == Activity.RESULT_OK) {
+                  connectDevice(data, true);
+              }
+              break;
+          case REQUEST_CONNECT_DEVICE_INSECURE:
+              // When DeviceListActivity returns with a device to connect
+              if (resultCode == Activity.RESULT_OK) {
+                  connectDevice(data, false);
+
+              }
+              break;
+          case REQUEST_ENABLE_BT:
+              // When the request to enable Bluetooth returns
+              if (resultCode == Activity.RESULT_OK) {
+                  // Bluetooth is now enabled, so set up a chat session
+                  setupBluetoothChat();
+              } else {
+                  // User did not enable Bluetooth or an error occurred
+                  Log.d(TAG, "BT not enabled");
+                  Toast.makeText(this, R.string.bt_not_enabled_leaving, Toast.LENGTH_SHORT).show();
+                  finish();
+              }
+          }
+      }
+
+      private void connectDevice(Intent data, boolean secure) {
+          // Get the device MAC address
+          String address = data.getExtras()
+              .getString(DeviceListActivity.EXTRA_DEVICE_ADDRESS);
+          // Get the BluetoothDevice object
+          BluetoothDevice device = mBluetoothAdapter.getRemoteDevice(address);
+          // Attempt to connect to the device
+          mChatService.connect(device, secure);
+          goNavigation();
+		      navi= new Navigation();
+		      navi.set(polyLine, mMapView, getBaseContext());
+		      navi.start();
+      }
+
+
+      public boolean Selected() {
+          Intent serverIntent = null;
+
+//              // Launch the DeviceListActivity to see devices and do scan
+              serverIntent = new Intent(this, DeviceListActivity.class);
+              startActivityForResult(serverIntent, REQUEST_CONNECT_DEVICE_SECURE);
+              return true;
+
+      }
+      
+
+      
+      
+      private void setupBluetoothChat() {
+          Log.d(TAG, "setupBluetoothChat()");
+
+          // Initialize the BluetoothChatService to perform bluetooth connections
+          mChatService = new BluetoothChatService(this, mHandler);
+
+          // Initialize the buffer for outgoing messages
+          mOutStringBuffer = new StringBuffer("");
+      }
 }
 

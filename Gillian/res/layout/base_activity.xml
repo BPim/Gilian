@@ -13,7 +13,13 @@
 	android:background="@android:color/black">
 
 
+	<FrameLayout
 
+	    android:layout_width="match_parent"
+
+	    android:layout_height="wrap_content" 
+	    android:layout_weight="1"
+	    >
 
 	<RelativeLayout
 
@@ -28,15 +34,39 @@
 		android:background="@android:color/white">
 
 	</RelativeLayout>
+<ImageView
+		    android:id="@+id/go_straight"
+		    android:layout_width="184dp"
+		    android:layout_height="187dp"
+		    android:src="@drawable/bnt_straight" 
+		    android:layout_gravity="center_horizontal|bottom"
+		    />
 
+		<ImageView
+		    android:id="@+id/turn_left"
+		    android:layout_width="184dp"
+		    android:layout_height="187dp"
+		    android:layout_centerHorizontal="true"
+		    android:src="@drawable/btn_left" 
+		    android:layout_gravity="center_horizontal|bottom"/>
 
+		<ImageView
+		    android:id="@+id/turn_right"
+		    android:layout_width="184dp"
+		    android:layout_height="187dp"
+		    android:layout_gravity="center_horizontal|bottom"
+		    android:src="@drawable/btn_right" />
+
+</FrameLayout>
 
 
 	<FrameLayout
 
 	    android:layout_width="match_parent"
 
-	    android:layout_height="wrap_content" >
+	    android:layout_height="wrap_content" 
+	    
+	    android:layout_gravity="center_horizontal|bottom">
 
 
 
@@ -45,9 +75,9 @@
 
 		    android:id="@+id/base"
 
-		    android:layout_width="fill_parent"
+		    android:layout_width="match_parent"
 
-		    android:layout_height="wrap_content"
+		    android:layout_height="35dp"
 
 		    android:orientation="vertical"
 
@@ -58,73 +88,56 @@
 
 		    <ScrollView
 
-		        android:layout_width="fill_parent"
+		        android:layout_width="match_parent"
 
-		        android:layout_height="wrap_content"
+		        android:layout_height="match_parent"
 
 		        android:fillViewport="true"
 
 		        android:scrollbarStyle="outsideOverlay" >
 
-
-
-
 		        <LinearLayout
-
-		            android:layout_width="fill_parent"
-
-		            android:layout_height="fill_parent"
-
+		            android:layout_width="match_parent"
+		            android:layout_height="match_parent"
+		            android:layout_weight="1"
 		            android:orientation="horizontal" >
-
-
-
 
 		            <Button
 
 		                android:id="@+id/btnAnimateTo"
-
-		                android:layout_width="wrap_content"
-
+		                android:layout_width="match_parent"
 		                android:layout_height="wrap_content"
-
 		                android:layout_weight="1"
-
-		                android:text="@string/animateTo" />
-
-
+		                android:text="@string/animateTo" 
+		                android:background="#ade1f5"/>
 
 
 		            <Button
-
 		                android:id="@+id/btnSetIcon"
-
-		                android:layout_width="wrap_content"
-
+		                android:layout_width="match_parent"
 		                android:layout_height="wrap_content"
-
 		                android:layout_weight="1"
-
-		                android:text="@string/setIcon" />
+		                android:text="@string/setIcon"
+		                android:background="#ade1f5" />
 
 		            <Button
 		                android:id="@+id/POISearch"
-		                android:layout_width="wrap_content"
+		                android:layout_width="match_parent"
 		                android:layout_height="wrap_content"
 		                android:layout_weight="1"
-		                android:text="POI검색" />
+		                android:text="@string/poi" 
+		              
+		                android:background="#ade1f5"/>
 
 		            <Button
 
 		                android:id="@+id/btnSetCompassMode"
-
-		                android:layout_width="wrap_content"
-
+		                android:layout_width="match_parent"
 		                android:layout_height="wrap_content"
-
 		                android:layout_weight="1"
-
-		                android:text="@string/setCompassMode" />
+		                android:text="@string/setCompassMode"
+		                android:background="#ade1f5" 
+		                />
 
 		        </LinearLayout>
 
@@ -135,20 +148,38 @@
 
 
 
-	<LinearLayout android:id="@+id/navi" android:layout_width="fill_parent" android:layout_height="wrap_content" android:layout_weight="1" android:orientation="vertical" android:paddingTop="2dip">
+		<LinearLayout
+
+		    android:id="@+id/navi"
+
+		    android:layout_width="match_parent"
+
+		    android:layout_height="35dp"
+
+		    android:orientation="vertical"
+
+		    android:paddingTop="2dip" >
 
 	    <ScrollView android:layout_width="fill_parent" android:layout_height="wrap_content" android:fillViewport="true" android:scrollbarStyle="outsideOverlay">
 
-	        <LinearLayout android:layout_width="fill_parent" android:layout_height="103dp" android:orientation="horizontal">
+	        <LinearLayout
+	            android:layout_width="match_parent"
+	            android:layout_height="wrap_content"
+	            android:orientation="horizontal" >
 
-	            <Button android:id="@+id/btncancel" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/navican_str" />
+	            <Button
+	                android:id="@+id/btncancel"
+	                android:layout_width="match_parent"
+	                android:layout_height="wrap_content"
+	                android:background="#ade1f5"
+	                android:text="@string/navican_str" />
 
-	            <LinearLayout android:layout_width="wrap_content" android:layout_height="match_parent" android:layout_weight="1" android:orientation="vertical">
+	           <LinearLayout android:layout_width="wrap_content" android:layout_height="32dp" android:layout_weight="1" android:orientation="vertical">
 
-	                <TextView android:id="@+id/state" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1" android:text="TextView" />
+	                <TextView android:id="@+id/state" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_weight="1" android:text="TextView" />
 
-	                <TextView android:id="@+id/dis" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_weight="1" android:text="TextView" />
-	            </LinearLayout>
+	                <TextView android:id="@+id/dis" android:layout_width="match_parent" android:layout_height="match_parent" android:layout_weight="1" android:text="TextView" /> 
+	            </LinearLayout> 
 	        </LinearLayout>
 	    </ScrollView>
 	</LinearLayout></FrameLayout>

@@ -1,0 +1,26 @@
+// Arduino LED strip test
+
+#include <Adafruit_NeoPixel.h>
+
+#define PIN            6  // pin number
+#define NUMPIXELS     30  // how many led
+
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, PIN, NEO_GRB + NEO_KHZ800);
+
+int delayval = 500; // delay for half a second
+
+void setup() {
+  pixels.begin(); // This initializes the NeoPixel library.
+}
+
+void loop() {
+  for(int i=0;i<NUMPIXELS;i++){
+    pixels.setPixelColor(i, pixels.Color(150,0,0)); // RGB color
+    pixels.show(); // This sends the updated pixel color to the hardware.
+    delay(60); // Delay 
+    
+    pixels.setPixelColor(i, pixels.Color(150,150,0)); // RGB color
+    pixels.show(); // This sends the updated pixel color to the hardware.
+    delay(60); // Delay 
+  }
+}
